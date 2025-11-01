@@ -211,6 +211,7 @@ def calculate_first_image(logpath):
 
 if __name__ == "__main__":
     # TODO make it possible to run it locally without having to use a database. Useful for seeing the images in the log to figure out a good name.
+    # TODO add heinrichs pose representation here if it does not exist
     log_root_path = os.environ.get("VAT_LOG_ROOT")
 
     parser = argparse.ArgumentParser()

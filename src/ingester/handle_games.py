@@ -75,4 +75,3 @@ def input_games(log_root_path, client):
                 logging.info(f"successfully inserted {game.name} in db")
             except Exception as e:
                 logging.error(f"error occured when trying to insert game {game.name}:{e}")
-            sys.exit(1)
