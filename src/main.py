@@ -21,7 +21,7 @@ def main():
     )
     input_events(log_root_path, client)
     input_games(log_root_path, client)
-    #input_videos(log_root_path, client)
+    input_videos(log_root_path, client)
 
 
 if __name__ == "__main__":

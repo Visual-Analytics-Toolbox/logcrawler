@@ -62,6 +62,7 @@ def input_games(log_root_path, client):
             # TODO check for comments here
             comment = get_game_comment(game)
 
+            # FIXME use patch for comments
             try:
                 response = client.games.create(
                     event=event.id,
