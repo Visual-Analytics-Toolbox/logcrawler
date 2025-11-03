@@ -75,3 +75,18 @@ def input_games(log_root_path, client):
                 logging.info(f"successfully inserted {game.name} in db")
             except Exception as e:
                 logging.error(f"error occured when trying to insert game {game.name}:{e}")
+
+            # patch game object for testgame flag
+            # FIXME that should go into games
+            try:
+                if "test" in game.name.lower():
+                    testgame_flag = True
+                else:
+                    testgame_flag = False
+
+                client.games.update(
+                    id=response.id,
+                    is_testgame=testgame_flag
+                )
+            except Exception as e:
+                logging.error(f"error occured when trying to update game {game.name}:{e}")

@@ -81,27 +81,8 @@ def input_logs(log_root_path, client):
             except Exception as e:
                 print("ERROR:", e)
                 continue
-            
-            # patch game object for testgame flag
-            # FIXME that should go into games
-            try:
-                if "test" in log_path.lower():
-                    testgame_flag = True
-                else:
-                    testgame_flag = False
-
-                client.games.update(
-                    id=game.id,
-                    is_testgame=False
-                )
-            except Exception as e:
-                print("ERROR:", e)
-                quit()
-
-            # get log id of the newly created log object
-            log_id = response.id
 
             # create an empty log status object here
             response = client.log_status.create(
-                log=log_id,
+                log=response.id,
             )
