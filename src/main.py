@@ -1,6 +1,6 @@
 from vaapi.client import Vaapi
 from utils import check_env_vars
-from ingester import input_events, input_games, input_videos
+from ingester import input_events, input_games, input_videos, input_logs
 from utils import check_folder_exists
 import logging
 import os
@@ -22,6 +22,7 @@ def main():
     input_events(log_root_path, client)
     input_games(log_root_path, client)
     input_videos(log_root_path, client)
+    input_logs(log_root_path, client)
 
 
 if __name__ == "__main__":

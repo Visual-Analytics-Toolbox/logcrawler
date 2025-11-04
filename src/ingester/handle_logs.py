@@ -27,11 +27,22 @@ def get_revision_number(file_path):
 def input_logs(log_root_path, client):
     games = client.games.list()
     for game in games:
-        gamelog_path = Path(log_root_path) / game.game_folder / "game_logs"
-        all_logs = [f for f in gamelog_path.iterdir() if f.is_dir()]
+        log_folder_path = Path(log_root_path) / game.game_folder / "game_logs"
+
+        if not log_folder_path.exists():
+            logging.error(f"log folder not found at {log_folder_path}")
+            continue
+
+        all_logs = [f for f in log_folder_path.iterdir() if f.is_dir()]
 
         for logfolder in sorted(all_logs):
             logfolder_parsed = str(logfolder.name).split("_")
+
+            # FIXME we only started adding the time to the folder name in 2019
+            if len(logfolder_parsed) != 4:
+                logging.error(f"Log folder name does not match expected format {logfolder_parsed}")
+                continue
+
             playernumber = logfolder_parsed[0]
             head_number = logfolder_parsed[1]
             version = get_robot_version(head_number)
@@ -65,7 +76,7 @@ def input_logs(log_root_path, client):
             hash = get_revision_number(str(nao_info_file))
 
             try:
-                response = client.logs.create(
+                log_response = client.logs.create(
                     game=game.id,
                     robot_version=version,
                     player_number=int(playernumber),
@@ -77,12 +88,18 @@ def input_logs(log_root_path, client):
                     sensor_log_path=sensor_log_path,
                     git_commit=hash
                 )
-                print(f"Created a log model with id {response.id}")
+                print(f"Created a log model with id {log_response.id}")
             except Exception as e:
-                print("ERROR:", e)
+                logging.error(f"could not create log object in db: {e}")
                 continue
 
             # create an empty log status object here
-            response = client.log_status.create(
-                log=response.id,
-            )
+            try:
+                response = client.log_status.create(
+                    log=log_response.id,
+                )
+            except Exception as e:
+                logging.error(f"could not create logstatus object in db: {e} ")
+                continue
+            
+            logging.info(f"created logstatus object with id {response.id}")
