@@ -132,4 +132,4 @@ def input_logs(log_root_path, client):
                 logging.error(f"could not create logstatus object in db: {e} ")
                 continue
             
-            logging.info(f"created logstatus object with id {response.id}")
+            logging.info(f"created logstatus object {response}")
