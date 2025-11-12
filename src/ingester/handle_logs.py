@@ -14,6 +14,16 @@ def get_robot_version(head_number: str) -> str:
         assert False, f"Unexpected head_number value: {head_number}"
 
 
+def get_robot_id(client, body_serial):
+    robot_list = client.robot.list(body_serial=body_serial)
+
+    if not len(robot_list) == 1:
+        return False
+    else:
+        return robot_list[0].id
+
+
+
 def get_revision_number(file_path):
     with open(file_path, 'r') as file:
         for line in file:
@@ -74,6 +84,11 @@ def input_logs(log_root_path, client):
                 .strip("/")
             )
             hash = get_revision_number(str(nao_info_file))
+            robot_id = get_robot_id(client, body_serial)
+
+            if not robot_id:
+                logging.error(f"robot not found for body_serial {body_serial}")
+                continue
 
             try:
                 log_response = client.logs.create(
@@ -83,6 +98,21 @@ def input_logs(log_root_path, client):
                     head_number=int(head_number),
                     body_serial=body_serial,
                     head_serial=head_serial,
+                    log_path=log_path,
+                    combined_log_path=combined_log_path,
+                    sensor_log_path=sensor_log_path,
+                    git_commit=hash
+                )
+                print(f"Created a log model with id {log_response.id}")
+            except Exception as e:
+                logging.error(f"could not create or get log object in db: {e}")
+                continue
+            
+            try:
+                log_response = client.logs.update(
+                    id=log_response.id,
+                    robot=robot_id,
+                    player_number=int(playernumber),
                     log_path=log_path,
                     combined_log_path=combined_log_path,
                     sensor_log_path=sensor_log_path,
