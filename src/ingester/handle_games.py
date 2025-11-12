@@ -69,9 +69,7 @@ def input_games(log_root_path, client):
                     team1=all_teams[team1],
                     team2=all_teams[team2],
                     half=halftime,
-                    game_folder=str(game).removeprefix(log_root_path).strip("/"),
                     start_time=date_object.isoformat(),
-                    comment=comment
                 )
                 logging.info(f"successfully inserted {game.name} in db")
             except Exception as e:
@@ -87,7 +85,9 @@ def input_games(log_root_path, client):
 
                 client.games.update(
                     id=response.id,
-                    is_testgame=testgame_flag
+                    is_testgame=testgame_flag,
+                    game_folder=str(game).removeprefix(log_root_path).strip("/"),
+                    comment=comment
                 )
             except Exception as e:
                 logging.error(f"error occured when trying to update game {game.name}:{e}")
