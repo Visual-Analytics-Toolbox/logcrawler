@@ -18,13 +18,14 @@ def check_team_name(all_teams: Mapping[str, int], team_name: str) -> bool:
     """
     return team_name in all_teams.keys()
 
+
 def get_game_comment(game):
-    if Path(game / 'comments.txt').is_file():
-        with open(game / 'comments.txt') as f:
+    if Path(game / "comments.txt").is_file():
+        with open(game / "comments.txt") as f:
             comment = f.read()
     else:
         logging.warning(f"No comments.txt found for game {game.name}")
-        comment = ''
+        comment = ""
     return comment
 
 
@@ -36,7 +37,12 @@ def input_games(log_root_path, client):
         all_games = [f for f in ev.iterdir() if f.is_dir()]
         for game in sorted(all_games):
             logging.debug(f"parsing folder {game}")
-            if str(game.name) == "experiments" or str(game.name) == "videos" or str(game.name) == "gc_logs" or str(game.name) == "tcm_logs":
+            if (
+                str(game.name) == "experiments"
+                or str(game.name) == "videos"
+                or str(game.name) == "gc_logs"
+                or str(game.name) == "tcm_logs"
+            ):
                 logging.debug(f"ignoring {game.name} folder")
                 continue
 
@@ -47,9 +53,11 @@ def input_games(log_root_path, client):
                 team2 = game_parsed[4]
                 halftime = game_parsed[5]
             except Exception as e:
-                logging.error(f'{e} when parsing {game.name} folder in {event.event_folder}')
+                logging.error(
+                    f"{e} when parsing {game.name} folder in {event.event_folder}"
+                )
                 continue
-            
+
             if not check_team_name(all_teams, team1):
                 logging.error(f"team {team1} not found in db")
                 continue
@@ -58,7 +66,7 @@ def input_games(log_root_path, client):
                 continue
 
             date_object = datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
-            
+
             # TODO check for comments here
             comment = get_game_comment(game)
 
@@ -73,7 +81,9 @@ def input_games(log_root_path, client):
                 )
                 logging.info(f"successfully inserted {game.name} in db")
             except Exception as e:
-                logging.error(f"error occured when trying to insert game {game.name}:{e}")
+                logging.error(
+                    f"error occured when trying to insert game {game.name}:{e}"
+                )
 
             # patch game object for testgame flag
             # FIXME that should go into games
@@ -87,7 +97,9 @@ def input_games(log_root_path, client):
                     id=response.id,
                     is_testgame=testgame_flag,
                     game_folder=str(game).removeprefix(log_root_path).strip("/"),
-                    comment=comment
+                    comment=comment,
                 )
             except Exception as e:
-                logging.error(f"error occured when trying to update game {game.name}:{e}")
+                logging.error(
+                    f"error occured when trying to update game {game.name}:{e}"
+                )
