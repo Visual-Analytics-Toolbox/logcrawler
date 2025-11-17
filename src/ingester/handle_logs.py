@@ -1,6 +1,9 @@
 from pathlib import Path
 import logging
+import sys
 
+httpx_logger = logging.getLogger('httpx')
+httpx_logger.setLevel(logging.ERROR)
 
 def get_robot_version(head_number: str) -> str:
     # TODO: when we have a robot model we dont need this here anymore
@@ -40,15 +43,17 @@ def sort_key_fn(data):
 def input_logs(log_root_path, client):
     games = client.games.list()
     for game in sorted(games, key=sort_key_fn):
+        logging.info(f"{game.id}: {game.game_folder}")
         log_folder_path = Path(log_root_path) / game.game_folder / "game_logs"
 
         if not log_folder_path.exists():
-            logging.error(f"log folder not found at {log_folder_path}")
+            logging.error(f"\tlog folder not found at {str(log_folder_path)}")
             continue
 
         all_logs = [f for f in log_folder_path.iterdir() if f.is_dir()]
 
         for logfolder in sorted(all_logs):
+            logging.info(f"\t\thandling log {str(logfolder)}")
             logfolder_parsed = str(logfolder.name).split("_")
 
             # FIXME we only started adding the time to the folder name in 2019
@@ -59,8 +64,6 @@ def input_logs(log_root_path, client):
                 continue
 
             playernumber = logfolder_parsed[0]
-            head_number = logfolder_parsed[1]
-            version = get_robot_version(head_number)
             nao_info_file = Path(logfolder) / "nao.info"
 
             with open(str(nao_info_file), "r") as file:
@@ -71,7 +74,6 @@ def input_logs(log_root_path, client):
                 body_serial = lines[
                     0
                 ].strip()  # Strip to remove any trailing newline characters
-                head_serial = lines[2].strip()
 
             log_path = (
                 str(Path(logfolder) / "game.log").removeprefix(log_root_path).strip("/")
@@ -107,6 +109,7 @@ def input_logs(log_root_path, client):
                 continue
 
             try:
+                logging.info(f"\t\tupdate log {log_response.id}: {str(logfolder)}")
                 log_response = client.logs.update(
                     id=log_response.id,
                     robot=robot_id,
@@ -117,8 +120,8 @@ def input_logs(log_root_path, client):
                     git_commit=hash,
                 )
             except Exception as e:
-                logging.error(f"could not create log object in db: {e}")
-                continue
+                logging.error(f"could not update log object in db: {e}")
+                sys.exit(1)
 
             # create an empty log status object here
             try:

@@ -24,15 +24,17 @@ def get_game_comment(game):
         with open(game / "comments.txt") as f:
             comment = f.read()
     else:
-        logging.info(f"No comments.txt found for game {game.name}")
+        #logging.info(f"No comments.txt found for game {game.name}")
         comment = ""
     return comment
 
+def sort_key_fn(data):
+    return data.id
 
 def input_games(log_root_path, client):
     events = client.events.list()
     all_teams = get_all_team_names(client)
-    for event in events:
+    for event in sorted(events, key=sort_key_fn):
         ev = Path(log_root_path) / event.event_folder
         all_games = [f for f in ev.iterdir() if f.is_dir()]
         for game in sorted(all_games):
@@ -43,7 +45,7 @@ def input_games(log_root_path, client):
                 or str(game.name) == "gc_logs"
                 or str(game.name) == "tcm_logs"
             ):
-                logging.debug(f"ignoring {game.name} folder")
+                logging.debug(f"\tignoring {game.name} folder")
                 continue
 
             try:

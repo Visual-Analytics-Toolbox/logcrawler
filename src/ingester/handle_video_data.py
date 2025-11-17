@@ -7,7 +7,7 @@ def get_comments(current_folder):
         with open(current_folder / "comments.txt") as f:
             comment = f.read()
     else:
-        logging.warning(f"No comments.txt found for game {current_folder.name}")
+        # logging.info(f"No comments.txt found for game {current_folder.name}")
         comment = ""
     return comment
 

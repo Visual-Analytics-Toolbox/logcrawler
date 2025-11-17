@@ -220,7 +220,7 @@ def combine_logs(log_root_path, client, force=False):
     for data in sorted(logs, key=sort_key_fn):
         log_folder_path = Path(data.log_path).parent  # data.log_path is path to file
         log_path = Path(log_root_path) / log_folder_path
-        logging.info("log_path: ", log_path)
+        logging.info(f"log_path: {str(log_path)}")
 
         if Path(log_path).is_file():
             logging.info(

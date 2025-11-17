@@ -1,22 +1,20 @@
 """
 Representation Exporter
-FIXME: this fails in some logs -> add error handling and reporting about broken logs
 """
-
-from vaapi.client import Vaapi
-import log_crawler
+from naoth.log import Reader as LogReader
+from naoth.log import Parser
 from pathlib import Path
+import logging
 import os
 import json
-import argparse
 
 
 def is_done(log, representation_file: str, force_flag: bool) -> bool:
     if force_flag:
-        print("\tforce flag is set - will parse log")
+        logging.info("\tforce flag is set - will parse log")
         return False
 
-    repr_list_missing = True
+    is_done_flag = True
     # Check if the file contains the keys we expect
     # TODO dont return yet we still need to check the data base
     if representation_file.is_file():
@@ -27,55 +25,62 @@ def is_done(log, representation_file: str, force_flag: bool) -> bool:
                 "cognition_representations" not in representations
                 or "motion_representations" not in representations
             ):
-                print(
+                logging.info(
                     "\tcognition_representations motion_representations field is missing in json file - will parse log"
                 )
-                repr_list_missing = False
+                is_done_flag = False
     else:
         return False
 
-    # check if data is in in the log model
+    # case where the file exist but the data in the database does not
+    if not log.representation_list:
+        return False
+
+    # check if old format of data is in in the log model
     db_repr_dict = log.representation_list
     if (
         "cognition_representations" not in db_repr_dict
         or "motion_representations" not in db_repr_dict
     ):
-        print(
+        logging.info(
             "\tcognition_representations motion_representations field is missing in db - will parse log"
         )
-        repr_list_missing = False
+        is_done_flag = False
 
-    return repr_list_missing
+    return is_done_flag
 
 
 def get_representation_set_from_log(log_file_path, representation_set):
-    print(f"\tparsing {log_file_path}")
+    logging.info(f"\tparsing {str(log_file_path)}")
     if Path(log_file_path).is_file() and os.stat(str(log_file_path)).st_size > 0:
-        representation_set = log_crawler.get_representation_set(str(log_file_path))
+        my_parser = Parser()
+        log = LogReader(log_file_path, my_parser)
+        try:
+            for frame in log:
+                dict_keys = frame.get_names()
+                for key in dict_keys:
+                    representation_set.add(key)
+        except:
+            logging.error(f"error parsing {str(log_file_path)}")
 
     return representation_set
 
 
-def main(args):
-    log_root_path = os.environ.get("VAT_LOG_ROOT")
-    client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
-
+def export_representation(log_root_path, client, force=False):
+    logging.info("################# Export Representations #################")
     existing_logs = client.logs.list()
 
     def sort_key_fn(data):
         return data.log_path
 
-    for log in sorted(existing_logs, key=sort_key_fn, reverse=args.reverse):
-        print(f"{log.id}: {log.log_path}")
+    for log in sorted(existing_logs, key=sort_key_fn):
+        logging.info(f"{log.id}: {log.log_path}")
         log_path = Path(log_root_path) / log.log_path
 
         actual_log_folder = log_path.parent
         repr_json_file = actual_log_folder / "representation.json"
         # continue if json file already exists
-        if not is_done(log, repr_json_file, args.force):
+        if not is_done(log, repr_json_file, force):
             gamelog_path = actual_log_folder / "game.log"
             combined_log_path = actual_log_folder / "combined.log"
             sensor_log_path = actual_log_folder / "sensor.log"
@@ -110,20 +115,10 @@ def main(args):
             with open(str(repr_json_file), "r") as file:
                 # Load the content of the file into a Python dictionary
                 representation_dict = json.load(file)
+
             client.logs.update(
                 id=log.id,
                 representation_list=representation_dict,
             )
         else:
-            print("\trepresentation.json already exists and force flag not set")
-
-
-if __name__ == "__main__":
-    try:
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-f", "--force", action="store_true", default=False)
-        parser.add_argument("-r", "--reverse", action="store_true", default=False)
-        args = parser.parse_args()
-        main(args)
-    except KeyboardInterrupt:
-        print("Exiting loop!")
+            logging.info("\trepresentation.json already exists and force flag not set")
