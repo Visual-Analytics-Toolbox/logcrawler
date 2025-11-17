@@ -23,20 +23,23 @@ def get_robot_id(client, body_serial):
         return robot_list[0].id
 
 
-
 def get_revision_number(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         for line in file:
-            if line.startswith('Revision number:'):
+            if line.startswith("Revision number:"):
                 # Extract the value between quotes
                 revision = line.split('"')[1]
                 return revision
     return None  # Return None if revision number not found
 
 
+def sort_key_fn(data):
+    return data.log_path
+
+
 def input_logs(log_root_path, client):
     games = client.games.list()
-    for game in games:
+    for game in sorted(games, key=sort_key_fn):
         log_folder_path = Path(log_root_path) / game.game_folder / "game_logs"
 
         if not log_folder_path.exists():
@@ -50,7 +53,9 @@ def input_logs(log_root_path, client):
 
             # FIXME we only started adding the time to the folder name in 2019
             if len(logfolder_parsed) != 4:
-                logging.error(f"Log folder name does not match expected format {logfolder_parsed}")
+                logging.error(
+                    f"Log folder name does not match expected format {logfolder_parsed}"
+                )
                 continue
 
             playernumber = logfolder_parsed[0]
@@ -67,11 +72,9 @@ def input_logs(log_root_path, client):
                     0
                 ].strip()  # Strip to remove any trailing newline characters
                 head_serial = lines[2].strip()
-            
+
             log_path = (
-                str(Path(logfolder) / "game.log")
-                .removeprefix(log_root_path)
-                .strip("/")
+                str(Path(logfolder) / "game.log").removeprefix(log_root_path).strip("/")
             )
             combined_log_path = (
                 str(Path(logfolder) / "combined.log")
@@ -101,13 +104,12 @@ def input_logs(log_root_path, client):
                     log_path=log_path,
                     combined_log_path=combined_log_path,
                     sensor_log_path=sensor_log_path,
-                    git_commit=hash
+                    git_commit=hash,
                 )
-                print(f"Created a log model with id {log_response.id}")
             except Exception as e:
                 logging.error(f"could not create or get log object in db: {e}")
                 continue
-            
+
             try:
                 log_response = client.logs.update(
                     id=log_response.id,
@@ -116,9 +118,8 @@ def input_logs(log_root_path, client):
                     log_path=log_path,
                     combined_log_path=combined_log_path,
                     sensor_log_path=sensor_log_path,
-                    git_commit=hash
+                    git_commit=hash,
                 )
-                print(f"Created a log model with id {log_response.id}")
             except Exception as e:
                 logging.error(f"could not create log object in db: {e}")
                 continue
@@ -131,5 +132,5 @@ def input_logs(log_root_path, client):
             except Exception as e:
                 logging.error(f"could not create logstatus object in db: {e} ")
                 continue
-            
+
             logging.info(f"created logstatus object {response}")
