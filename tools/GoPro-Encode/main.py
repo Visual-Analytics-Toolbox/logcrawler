@@ -2,28 +2,39 @@ import subprocess
 from pathlib import Path
 from telemetry_parser import Parser as GPMFParser
 
+
 def process_video(input_path):
     # Create output path (modify as needed)
     output_path = video_input.replace("_GoPro", "_GoPro_reencoded")
-    
+
     if Path(output_path).exists():
         return
     # FFmpeg command
     cmd = [
-        'ffmpeg',
-        '-i', input_path,
-        '-map', '0:v',
-        '-map', '0:a',
-        '-map', '0:3',
-        '-c:v', 'libx264',
-        '-crf', '18',
-        '-c:a', 'aac',
-        '-c:s', 'copy',
-        '-c:d', 'copy',
-        '-movflags', '+faststart',
-        output_path
+        "ffmpeg",
+        "-i",
+        input_path,
+        "-map",
+        "0:v",
+        "-map",
+        "0:a",
+        "-map",
+        "0:3",
+        "-c:v",
+        "libx264",
+        "-crf",
+        "18",
+        "-c:a",
+        "aac",
+        "-c:s",
+        "copy",
+        "-c:d",
+        "copy",
+        "-movflags",
+        "+faststart",
+        output_path,
     ]
-    
+
     try:
         # Run the command
         subprocess.run(cmd, check=True)
@@ -31,7 +42,7 @@ def process_video(input_path):
     except subprocess.CalledProcessError as e:
         print(f"Error processing {input_path}: {e}")
         quit()
-    
+
     # TODO test telemetry
     tele = GPMFParser(output_path).telemetry()
     print(len(tele))

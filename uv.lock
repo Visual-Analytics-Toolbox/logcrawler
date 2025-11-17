@@ -127,6 +127,7 @@ name = "logcrawler"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "naoth" },
     { name = "prometheus-client" },
     { name = "ruff" },
     { name = "vaapi" },
@@ -134,9 +135,23 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "naoth", specifier = ">=0.5.1" },
     { name = "prometheus-client", specifier = ">=0.23.1" },
     { name = "ruff", specifier = ">=0.14.0" },
     { name = "vaapi", specifier = ">=0.7.9" },
+]
+
+[[package]]
+name = "naoth"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/91/4bc23ba871f908b3ff4255bf7921977ce87a0e507e39a9d07391ba7e9723/naoth-0.5.1.tar.gz", hash = "sha256:787f168c322e647a91481c6c969636b963555bc95e8619443a94819b7f0f3da3", size = 66150, upload-time = "2024-08-08T16:20:01.62Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c5/6c/34c201cffc2adf400061d38906867eef225a547608151f0a07898dccd022/naoth-0.5.1-py3-none-any.whl", hash = "sha256:dc8a62c6d30f76bf37b7656fc61a668609a2beeacb98df3660b7400ec394cbdd", size = 76119, upload-time = "2024-08-08T16:19:59.636Z" },
 ]
 
 [[package]]

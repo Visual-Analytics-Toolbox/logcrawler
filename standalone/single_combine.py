@@ -138,7 +138,11 @@ def calculate_first_image(logpath):
 if __name__ == "__main__":
     # TODO argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", help="Input folder holding a game.log and a images.log or images_jpeg.log")
+    parser.add_argument(
+        "-i",
+        "--input",
+        help="Input folder holding a game.log and a images.log or images_jpeg.log",
+    )
 
     args = parser.parse_args()
 
@@ -155,4 +159,6 @@ if __name__ == "__main__":
         print(f"No game.log found in folder {gamelog_path}")
         quit()
 
-    write_combined_log_jpeg(str(combined_log_path), str(img_jpeg_log_path), str(gamelog_path))
+    write_combined_log_jpeg(
+        str(combined_log_path), str(img_jpeg_log_path), str(gamelog_path)
+    )

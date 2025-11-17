@@ -1,6 +1,7 @@
 from vaapi.client import Vaapi
 import os
 import uuid
+
 """
 {
     "x": ( cx - ( width / 2 ) ) / 640,
@@ -11,28 +12,30 @@ import uuid
     "height": height / 480
 }
 """
+
+
 def create_annotation():
     my_json1 = {
         "x": 100,
         "y": 100,
-        "id":uuid.uuid4().hex[:9].upper(),
+        "id": uuid.uuid4().hex[:9].upper(),
         "width": 300,
-        "height": 200
+        "height": 200,
     }
     my_json2 = {
         "x": 400,
         "y": 400,
-        "id":uuid.uuid4().hex[:9].upper(),
+        "id": uuid.uuid4().hex[:9].upper(),
         "width": 50,
-        "height": 50
+        "height": 50,
     }
 
-    #response = client.annotations.create(
+    # response = client.annotations.create(
     #    image_id=7667304,
     #    type="bbox",
     #    class_name="ball",
     #    data=my_json1,
-    #)
+    # )
     response = client.annotations.create(
         image_id=7667304,
         type="bbox",

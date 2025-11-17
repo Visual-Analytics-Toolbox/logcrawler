@@ -1,6 +1,7 @@
 """
 Create a frame filter for testing
 """
+
 from vaapi.client import Vaapi
 import os
 
@@ -8,7 +9,7 @@ import os
 def frame_filter_demo(client):
     log_id = 282
     # TODO find all image with annotations
-    response= client.annotations.list(log=log_id)
+    response = client.annotations.list(log=log_id)
 
     frame_list = set([i.frame_number for i in response])
 

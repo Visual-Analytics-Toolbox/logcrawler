@@ -1,6 +1,7 @@
 """
-    Instead of saving all the images from a log in the filesystem lets try to use the logfile directly with mmap
+Instead of saving all the images from a log in the filesystem lets try to use the logfile directly with mmap
 """
+
 from google.protobuf.json_format import MessageToDict
 from naoth.log import Reader as LogReader
 from naoth.log import Parser
@@ -9,6 +10,7 @@ from PIL import Image as PIL_Image
 import numpy as np
 import io
 import time
+
 
 def image_from_proto_jpeg(message):
     # hack:
@@ -45,11 +47,11 @@ def image_from_proto_jpeg(message):
         "YCbCr", (message.width, message.height), yuv888.tobytes()
     )
     img = img.convert("RGB")
-    #img.save("test1.png")
+    # img.save("test1.png")
 
 
-log_path="/mnt/d/logs/2025-03-12-GO25/2025-03-13_10-10-00_BerlinUnited_vs_Bembelbots_half1/game_logs/2_36_Nao0018_250313-1032/combined.log"
-file = open(log_path, 'rb')
+log_path = "/mnt/d/logs/2025-03-12-GO25/2025-03-13_10-10-00_BerlinUnited_vs_Bembelbots_half1/game_logs/2_36_Nao0018_250313-1032/combined.log"
+file = open(log_path, "rb")
 my_parser = Parser()
 my_parser.register("ImageJPEG", "Image")
 my_parser.register("ImageJPEGTop", "Image")
@@ -58,20 +60,19 @@ game_log = LogReader(str(log_path), my_parser)
 my_mmap = mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ)
 
 for idx, frame in enumerate(game_log):
-
     if "ImageJPEGTop" in frame:
         position, size = frame._fields["ImageJPEGTop"]
-        #print("position", position)
-        #print("size", size)
-        #print(frame["ImageJPEGTop"])
-        start= time.time()
-        data= my_mmap[position:position+size]
+        # print("position", position)
+        # print("size", size)
+        # print(frame["ImageJPEGTop"])
+        start = time.time()
+        data = my_mmap[position : position + size]
 
         message = my_parser.parse("ImageJPEGTop", bytes(data))
-        end = time.time() 
+        end = time.time()
         image_from_proto_jpeg(message)
         print()
-        #print(message_dict)
-        
+        # print(message_dict)
+
         print(end - start)
         quit()

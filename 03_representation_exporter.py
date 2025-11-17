@@ -2,6 +2,7 @@
 Representation Exporter
 FIXME: this fails in some logs -> add error handling and reporting about broken logs
 """
+
 from vaapi.client import Vaapi
 import log_crawler
 from pathlib import Path

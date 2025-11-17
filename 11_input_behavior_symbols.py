@@ -52,18 +52,21 @@ def is_behavior_done(log):
         print(
             f"Run logstatus calculation again for log {log_id} or make sure the end of the log is calculated the same way"
         )
-        print(f"\tBehaviorStateSparse frames in log are {log_status.BehaviorStateSparse}")
+        print(
+            f"\tBehaviorStateSparse frames in log are {log_status.BehaviorStateSparse}"
+        )
         print(f"\tFrames with Behavior Symbols in db are {response['count']}")
         quit()
     else:
-        print(f"\tBehaviorStateSparse frames in log are {log_status.BehaviorStateSparse}")
+        print(
+            f"\tBehaviorStateSparse frames in log are {log_status.BehaviorStateSparse}"
+        )
         print(f"\tFrames with Behavior Symbols in db are {response['count']}")
         return False
 
-
     if log_status.FrameInfo and int(log_status.FrameInfo) > 0:
         print(f"\tcognition frames are {log_status.FrameInfo}")
-        
+
         print(f"\tbehavior frames are {response['count']}")
         return response["count"] == int(log_status.FrameInfo)
     else:
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         if is_behavior_done(log):
             print("\tbehavior already inserted, will continue with the next log")
             continue
-        
+
         # precalculate frame mapping for this log
         frame_list = client.cognitionframe.list(log=log.id)
         # Create a dictionary mapping frame_number to id

@@ -80,7 +80,7 @@ if __name__ == "__main__":
             response = client.events.create(
                 name=event.name,
                 event_folder=str(event).removeprefix(log_root_path).strip("/"),
-                )
+            )
             event_id = response.id
 
             all_games = [f for f in event.iterdir() if f.is_dir()]
@@ -129,7 +129,6 @@ if __name__ == "__main__":
                             .removeprefix(log_root_path)
                             .strip("/")
                         )
-                        
 
                         try:
                             response = client.logs.create(
@@ -154,10 +153,7 @@ if __name__ == "__main__":
                             else:
                                 testgame_flag = False
 
-                            client.games.update(
-                                id=game_id,
-                                is_testgame=False
-                            )
+                            client.games.update(id=game_id, is_testgame=False)
                         except Exception as e:
                             print("ERROR:", e)
                             quit()

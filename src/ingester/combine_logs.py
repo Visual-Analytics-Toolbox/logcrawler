@@ -12,8 +12,11 @@ from naoth.pb.Framework_Representations_pb2 import Image
 from naoth.log import Parser
 from os import stat
 import os
-from vaapi.client import Vaapi
-import argparse
+import logging
+
+
+def sort_key_fn(data):
+    return data.log_path
 
 
 def create_image_log_dict(image_log, first_image_is_top):
@@ -49,10 +52,12 @@ def create_image_log_dict(image_log, first_image_is_top):
 
             # handle the case of incomplete image at the end of the logfile
             if f.tell() >= file_size:
-                print(
+                logging.warning(
                     "Info: frame {} in {} incomplete, missing {} bytes. Stop.".format(
                         frame_number, image_log, f.tell() + 1 - file_size
                     )
+                )
+                (
                 )
                 break
 
@@ -154,7 +159,7 @@ def write_combined_log(
                         frame.remove(image_name)
 
     except Exception as e:
-        print(f"failed to combine file: {e}")
+        logging.error(f"failed to combine file: {e}")
         # TODO set a status in the db so that no one tries to parse this again
         # check 2023-08-cccamp/2023-08-17_12-00-00_Berlin United_vs_TestOpponent_testgame-02/game_logs/1_21_Nao0041_230817-1136
         # Maybe we can handle weird broken files better than completely ignoring them??
@@ -170,7 +175,7 @@ def write_combined_log_jpeg(combined_log_path, img_log_path, gamelog_path):
             for frame in reader.read():
                 # only write frames which have corresponding images
                 if frame.number not in image_log_index:
-                    print(
+                    logging.info(
                         "Frame {} has no corresponding image data.".format(frame.number)
                     )
                     output.write(bytes(frame))
@@ -189,7 +194,7 @@ def write_combined_log_jpeg(combined_log_path, img_log_path, gamelog_path):
                 for image_name in image_log_index[frame.number]:
                     frame.remove(image_name)
     except Exception as e:
-        print(f"failed to combine file: {e}")
+        logging.error(f"failed to combine file: {e}")
         # TODO set a status in the db so that no one tries to parse this again
         if combined_log_path.is_file():
             combined_log_path.unlink()
@@ -209,33 +214,16 @@ def calculate_first_image(logpath):
         return False
 
 
-if __name__ == "__main__":
-    # TODO make it possible to run it locally without having to use a database. Useful for seeing the images in the log to figure out a good name.
+def combine_logs(log_root_path, client, force=False):
     # TODO add heinrichs pose representation here if it does not exist
-    log_root_path = os.environ.get("VAT_LOG_ROOT")
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--force", action="store_true", default=False)
-    parser.add_argument("-r", "--reverse", action="store_true", default=False)
-    args = parser.parse_args()
-
-    client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
-    existing_data = client.logs.list()
-
-    def sort_key_fn(data):
-        return data.log_path
-
-    for data in sorted(existing_data, key=sort_key_fn, reverse=args.reverse):
-        log_id = data.id
+    logs = client.logs.list()
+    for data in sorted(logs, key=sort_key_fn):
         log_folder_path = Path(data.log_path).parent  # data.log_path is path to file
         log_path = Path(log_root_path) / log_folder_path
-        print("log_path: ", log_path)
+        logging.info("log_path: ", log_path)
 
         if Path(log_path).is_file():
-            print(
+            logging.info(
                 "\tpath is a experiment log - no automatic combining here. If needed combine the log manually and add to the event list"
             )
             continue
@@ -257,12 +245,12 @@ if __name__ == "__main__":
         )
 
         if not has_game_log and (has_image_log or has_image_jpeg_log):
-            print(
+            logging.info(
                 "\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
             )
             continue
 
-        if not combined_log_path.is_file() or args.force:
+        if not combined_log_path.is_file() or force:
             if has_image_log and has_image_jpeg_log:
                 write_combined_log(
                     log_folder_path,
@@ -282,4 +270,4 @@ if __name__ == "__main__":
             else:
                 # not an error: /vol/repl261-vol4/naoth/logs/2024-04-17_GO24/2024-04-19_21-00-00_Berlin United_vs_Nao Devils_half1-test/game_logs/7_16_Nao0017_240419-1937
                 # raise ValueError("We shouldn't have gotten this far, either image.log or image_jpeg.log should exist")
-                print("WARNING: nothing to combine found here")
+                logging.warning("WARNING: nothing to combine found here")
