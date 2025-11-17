@@ -34,7 +34,7 @@ def get_revision_number(file_path):
 
 
 def sort_key_fn(data):
-    return data.log_path
+    return data.id
 
 
 def input_logs(log_root_path, client):
@@ -96,11 +96,7 @@ def input_logs(log_root_path, client):
             try:
                 log_response = client.logs.create(
                     game=game.id,
-                    robot_version=version,
                     player_number=int(playernumber),
-                    head_number=int(head_number),
-                    body_serial=body_serial,
-                    head_serial=head_serial,
                     log_path=log_path,
                     combined_log_path=combined_log_path,
                     sensor_log_path=sensor_log_path,

@@ -24,7 +24,7 @@ def get_game_comment(game):
         with open(game / "comments.txt") as f:
             comment = f.read()
     else:
-        logging.warning(f"No comments.txt found for game {game.name}")
+        logging.info(f"No comments.txt found for game {game.name}")
         comment = ""
     return comment
 

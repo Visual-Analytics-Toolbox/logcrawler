@@ -16,7 +16,7 @@ def input_events(log_root_path, client):
                 with open(event / "comments.txt") as f:
                     comment = f.read()
             else:
-                logging.getLogger().warning(
+                logging.getLogger().info(
                     f"No comments.txt found for event {event.name}"
                 )
                 comment = ""
