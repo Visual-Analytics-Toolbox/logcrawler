@@ -49,7 +49,7 @@ def is_done(log):
     print("\tcalculating num bottom images in folder")
     num_bottom = (
         subprocess.run(
-            f"./fast_ls {bottom_path}", shell=True, capture_output=True, text=True
+            f'./fast_ls "{bottom_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if bottom_path.is_dir()
         else 0
@@ -58,7 +58,7 @@ def is_done(log):
     print("\tcalculating num top images in folder")
     num_top = (
         subprocess.run(
-            f"./fast_ls {top_path}", shell=True, capture_output=True, text=True
+            f'./fast_ls "{top_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if top_path.is_dir()
         else 0
@@ -67,7 +67,7 @@ def is_done(log):
     print("\tcalculating num bottom jpeg images in folder")
     num_jpg_bottom = (
         subprocess.run(
-            f"./fast_ls {jpg_bottom_path}", shell=True, capture_output=True, text=True
+            f'./fast_ls "{jpg_bottom_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if jpg_bottom_path.is_dir()
         else 0
@@ -76,7 +76,7 @@ def is_done(log):
     print("\tcalculating num top jpeg images in folder")
     num_jpg_top = (
         subprocess.run(
-            f"./fast_ls {jpg_top_path} ", shell=True, capture_output=True, text=True
+            f'./fast_ls "{jpg_top_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if jpg_top_path.is_dir()
         else 0
