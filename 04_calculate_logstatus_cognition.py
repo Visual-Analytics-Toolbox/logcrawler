@@ -41,6 +41,8 @@ def is_done(log_id, status_dict):
 def add_gamelog_representations(log, log_path):
     # get list of representations from db
     cognition_repr_names = log.representation_list["cognition_representations"]
+    
+    cognition_repr_names.remove("RoleDecisionModel")
     # make a dictionary out of the representation names which can later be used to count
     cognition_status_dict = {item: 0 for item in cognition_repr_names}
 

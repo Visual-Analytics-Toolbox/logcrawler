@@ -10,7 +10,7 @@ import os
 
 
 def main():
-    logs = client.logs.list()
+    logs = client.images.list(log=123)
 
     def sort_key_fn(log):
         return log.id

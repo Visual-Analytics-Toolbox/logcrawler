@@ -5,8 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "label-studio-sdk>=2.0.14",
     "naoth>=0.5.1",
     "prometheus-client>=0.23.1",
     "ruff>=0.14.0",
-    "vaapi>=0.7.9",
+    "vaapi>=0.7.11",
 ]
