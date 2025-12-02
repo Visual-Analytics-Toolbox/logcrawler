@@ -41,6 +41,7 @@ def sort_key_fn(data):
 
 
 def input_logs(log_root_path, client):
+    logging.info("################# Input Log Data #################")
     games = client.games.list()
     for game in sorted(games, key=sort_key_fn):
         logging.info(f"{game.id}: {game.game_folder}")
@@ -53,7 +54,7 @@ def input_logs(log_root_path, client):
         all_logs = [f for f in log_folder_path.iterdir() if f.is_dir()]
 
         for logfolder in sorted(all_logs):
-            logging.info(f"\t\thandling log {str(logfolder)}")
+            logging.debug(f"\t\thandling log {str(logfolder)}")
             logfolder_parsed = str(logfolder.name).split("_")
 
             # FIXME we only started adding the time to the folder name in 2019
@@ -109,7 +110,7 @@ def input_logs(log_root_path, client):
                 continue
 
             try:
-                logging.info(f"\t\tupdate log {log_response.id}: {str(logfolder)}")
+                logging.debug(f"\t\tupdate log {log_response.id}: {str(logfolder)}")
                 log_response = client.logs.update(
                     id=log_response.id,
                     robot=robot_id,
@@ -131,5 +132,5 @@ def input_logs(log_root_path, client):
             except Exception as e:
                 logging.error(f"could not create logstatus object in db: {e} ")
                 continue
-
-            logging.info(f"created logstatus object {response}")
+            # log message is misleading its not necessarily creating the logstatus object in db
+            logging.debug(f"created logstatus object {response}")

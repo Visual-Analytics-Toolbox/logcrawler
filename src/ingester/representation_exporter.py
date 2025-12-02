@@ -11,7 +11,7 @@ import json
 
 def is_done(log, representation_file: str, force_flag: bool) -> bool:
     if force_flag:
-        logging.info("\tforce flag is set - will parse log")
+        logging.debug("\tforce flag is set - will parse log")
         return False
 
     is_done_flag = True
@@ -25,7 +25,7 @@ def is_done(log, representation_file: str, force_flag: bool) -> bool:
                 "cognition_representations" not in representations
                 or "motion_representations" not in representations
             ):
-                logging.info(
+                logging.debug(
                     "\tcognition_representations motion_representations field is missing in json file - will parse log"
                 )
                 is_done_flag = False
@@ -42,7 +42,7 @@ def is_done(log, representation_file: str, force_flag: bool) -> bool:
         "cognition_representations" not in db_repr_dict
         or "motion_representations" not in db_repr_dict
     ):
-        logging.info(
+        logging.debug(
             "\tcognition_representations motion_representations field is missing in db - will parse log"
         )
         is_done_flag = False
@@ -51,7 +51,7 @@ def is_done(log, representation_file: str, force_flag: bool) -> bool:
 
 
 def get_representation_set_from_log(log_file_path, representation_set):
-    logging.info(f"\tparsing {str(log_file_path)}")
+    logging.debug(f"\tparsing {str(log_file_path)}")
     if Path(log_file_path).is_file() and os.stat(str(log_file_path)).st_size > 0:
         my_parser = Parser()
         log = LogReader(log_file_path, my_parser)
@@ -74,7 +74,7 @@ def export_representation(log_root_path, client, force=False):
         return data.log_path
 
     for log in sorted(existing_logs, key=sort_key_fn):
-        logging.info(f"{log.id}: {log.log_path}")
+        logging.debug(f"{log.id}: {log.log_path}")
         log_path = Path(log_root_path) / log.log_path
 
         actual_log_folder = log_path.parent
@@ -121,4 +121,4 @@ def export_representation(log_root_path, client, force=False):
                 representation_list=representation_dict,
             )
         else:
-            logging.info("\trepresentation.json already exists and force flag not set")
+            logging.debug("\trepresentation.json already exists and force flag not set")

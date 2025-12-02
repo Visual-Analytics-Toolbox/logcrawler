@@ -175,7 +175,7 @@ def write_combined_log_jpeg(combined_log_path, img_log_path, gamelog_path):
             for frame in reader.read():
                 # only write frames which have corresponding images
                 if frame.number not in image_log_index:
-                    logging.info(
+                    logging.debug(
                         "Frame {} has no corresponding image data.".format(frame.number)
                     )
                     output.write(bytes(frame))
@@ -215,15 +215,16 @@ def calculate_first_image(logpath):
 
 
 def combine_logs(log_root_path, client, force=False):
+    logging.info("################# Combine Logs #################")
     # TODO add heinrichs pose representation here if it does not exist
     logs = client.logs.list()
     for data in sorted(logs, key=sort_key_fn):
         log_folder_path = Path(data.log_path).parent  # data.log_path is path to file
         log_path = Path(log_root_path) / log_folder_path
-        logging.info(f"log_path: {str(log_path)}")
+        logging.debug(f"log_path: {str(log_path)}")
 
         if Path(log_path).is_file():
-            logging.info(
+            logging.debug(
                 "\tpath is a experiment log - no automatic combining here. If needed combine the log manually and add to the event list"
             )
             continue
@@ -245,8 +246,8 @@ def combine_logs(log_root_path, client, force=False):
         )
 
         if not has_game_log and (has_image_log or has_image_jpeg_log):
-            logging.info(
-                "\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
+            logging.warning(
+                f"{str(log_path)}\n\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
             )
             continue
 
@@ -270,4 +271,4 @@ def combine_logs(log_root_path, client, force=False):
             else:
                 # not an error: /vol/repl261-vol4/naoth/logs/2024-04-17_GO24/2024-04-19_21-00-00_Berlin United_vs_Nao Devils_half1-test/game_logs/7_16_Nao0017_240419-1937
                 # raise ValueError("We shouldn't have gotten this far, either image.log or image_jpeg.log should exist")
-                logging.warning("WARNING: nothing to combine found here")
+                logging.debug("WARNING: nothing to combine found here")

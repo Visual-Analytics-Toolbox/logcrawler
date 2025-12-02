@@ -13,6 +13,7 @@ def get_comments(current_folder):
 
 
 def input_videos(log_root_path, client):
+    logging.info("################# Input Video Data #################")
     games = client.games.list()
     for game in games:
         game_folder = Path(log_root_path) / game.game_folder

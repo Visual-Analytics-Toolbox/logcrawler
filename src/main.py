@@ -28,6 +28,9 @@ def main():
     # create representation json
     # add robot pose + patch representation file (maybe logstatus?)
 
+    logging.info("########################################")
+    logging.info("################# Done #################")
+    logging.info("########################################")
 
 if __name__ == "__main__":
     main()

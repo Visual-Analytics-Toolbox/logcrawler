@@ -32,6 +32,7 @@ def sort_key_fn(data):
     return data.id
 
 def input_games(log_root_path, client):
+    logging.info("################# Input Game Data #################")
     events = client.events.list()
     all_teams = get_all_team_names(client)
     for event in sorted(events, key=sort_key_fn):
@@ -81,7 +82,7 @@ def input_games(log_root_path, client):
                     half=halftime,
                     start_time=date_object.isoformat(),
                 )
-                logging.info(f"successfully inserted {game.name} in db")
+                logging.debug(f"successfully inserted {game.name} in db")
             except Exception as e:
                 logging.error(
                     f"error occured when trying to insert game {game.name}:{e}"
