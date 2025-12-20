@@ -121,6 +121,8 @@ def create_project_if_not_exist(client, project_names):
             )
             client.views.create(project=project.id, data=view_config)
 
+            # TODO create webhook here
+
 
 def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
     # 1. Pre-calculate all needed project names and their IDs
