@@ -99,8 +99,7 @@ def is_done(log):
         print(f"ImageJPEGTop: {log_status.ImageJPEGTop or 0} != {num_jpg_top}")
         return False
 
-    with open(str(hidden_file), "w") as file:
-        pass
+    Path(hidden_file).touch()
 
     return True
 
