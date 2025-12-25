@@ -99,7 +99,7 @@ def is_done(log_id, camera, image_type):
     elif camera == "TOP" and image_type == "JPEG":
         target_count = int(log_status.ImageJPEGTop)
     else:
-        ValueError()
+        raise ValueError()
 
     if target_count == db_count:
         print("\t\tall images are already inserted")
