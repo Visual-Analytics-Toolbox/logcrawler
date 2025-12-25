@@ -44,7 +44,7 @@ def add_gamelog_representations(log, log_path):
     
     cognition_repr_names.remove("RoleDecisionModel")
     # make a dictionary out of the representation names which can later be used to count
-    cognition_status_dict = {item: 0 for item in cognition_repr_names}
+    cognition_status_dict = dict.fromkeys(cognition_repr_names, 0)
 
     new_cognition_status_dict = is_done(log.id, cognition_status_dict)
     if not args.force and len(new_cognition_status_dict) == 0:

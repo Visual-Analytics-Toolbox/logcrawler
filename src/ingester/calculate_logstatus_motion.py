@@ -36,7 +36,7 @@ def add_sensorlog_representations(log, sensor_log_path):
     # get list of representations from db
     motion_repr_names = log.representation_list["motion_representations"]
     # make a dictionary out of the representation names which can later be used to count
-    motion_status_dict = {item: 0 for item in motion_repr_names}
+    motion_status_dict = dict.fromkeys(motion_repr_names, 0)
 
     new_motion_status_dict = is_done_motion(log.id, motion_status_dict)
     if not args.force and len(new_motion_status_dict) == 0:
