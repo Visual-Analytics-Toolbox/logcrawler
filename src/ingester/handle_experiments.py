@@ -1,6 +1,7 @@
 from pathlib import Path
 import logging
 
+
 def input_experiments(log_root_path, client):
     events = client.events.list()
     for event in events:
@@ -10,5 +11,5 @@ def input_experiments(log_root_path, client):
             logging.debug(f"parsing folder {game}")
             if str(game.name) != "Experiments":
                 continue
-            
+
             # TODO handle experiments logic here

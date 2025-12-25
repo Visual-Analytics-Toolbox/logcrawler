@@ -2,6 +2,7 @@ import os
 import Vaapi
 from pathlib import Path
 import logging
+
 if __name__ == "__main__":
     log_root_path = os.environ.get("VAT_LOG_ROOT")
 
@@ -9,7 +10,7 @@ if __name__ == "__main__":
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
-    #todo wait until VAT add_team_view branch is ready
+    # todo wait until VAT add_team_view branch is ready
     events = client.events.list()
     for event in events:
         ev = Path(log_root_path) / event.event_folder
@@ -22,7 +23,4 @@ if __name__ == "__main__":
                 team2 = game_parsed[4]
                 halftime = game_parsed[5]
             except Exception as e:
-                logging.error(f'{e} when parsing {game.name} folder')
-            
-    
-    
+                logging.error(f"{e} when parsing {game.name} folder")

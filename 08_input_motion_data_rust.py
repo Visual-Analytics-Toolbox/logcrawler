@@ -124,7 +124,7 @@ def input_representation_data(log, crawler, my_parser, representation_list):
 
     for repr_name in representation_list:
         repr_dict = crawler.get_representation_metadata(repr_name)
-        
+
         print(f"\tparse all {repr_name} messages in python")
 
         parsed_messages = list()

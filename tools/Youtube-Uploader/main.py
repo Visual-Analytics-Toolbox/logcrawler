@@ -1,7 +1,8 @@
 """
-    iterate over all videos and upload them - Name and description is based on file name and other data from the db
-    after upload the url should be written in the video model
+iterate over all videos and upload them - Name and description is based on file name and other data from the db
+after upload the url should be written in the video model
 """
+
 from vaapi.client import Vaapi
 from uploader import check_files, get_authenticated_service, initialize_upload_simple
 from pathlib import Path
@@ -29,10 +30,16 @@ def main():
 
         video_file = Path(log_root_path) / Path(video.video_path)
         # Playlist ID ist for German Open 2025
-        upload_response = initialize_upload_simple(youtube, videofile=str(video_file), title=title, description="", playlistId="PLVoczrk_MzTwHKCQ0ZI9pirjBQZjwV-gM")
-        
+        upload_response = initialize_upload_simple(
+            youtube,
+            videofile=str(video_file),
+            title=title,
+            description="",
+            playlistId="PLVoczrk_MzTwHKCQ0ZI9pirjBQZjwV-gM",
+        )
+
         # patch the video model with url
-        youtube_url = "https://www.youtube.com/watch?v=" + upload_response['id']
+        youtube_url = "https://www.youtube.com/watch?v=" + upload_response["id"]
         response = client.video.update(id=video.id, url=youtube_url)
 
 

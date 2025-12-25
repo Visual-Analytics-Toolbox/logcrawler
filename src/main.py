@@ -1,13 +1,13 @@
 from vaapi.client import Vaapi
 from utils import check_env_vars
-from ingester import input_events
-from ingester import input_games
+from ingester import input_events, input_games, input_videos, input_logs, combine_logs, export_representation
 from utils import check_folder_exists
 import logging
 import os
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.WARNING)
+
+def main():
+    logging.basicConfig(level=logging.INFO)
     check_env_vars()
     log_root_path = os.environ.get("VAT_LOG_ROOT")
 
@@ -21,3 +21,16 @@ if __name__ == "__main__":
     )
     input_events(log_root_path, client)
     input_games(log_root_path, client)
+    input_videos(log_root_path, client)
+    input_logs(log_root_path, client)
+    combine_logs(log_root_path, client)
+    export_representation(log_root_path, client)
+    # create representation json
+    # add robot pose + patch representation file (maybe logstatus?)
+
+    logging.info("########################################")
+    logging.info("################# Done #################")
+    logging.info("########################################")
+
+if __name__ == "__main__":
+    main()

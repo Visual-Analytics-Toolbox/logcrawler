@@ -3,7 +3,8 @@ from pathlib import Path
 import logging
 import os
 
-ERROR_COUNT = Counter('logcrawler_errors', 'logcrawler_errors')
+ERROR_COUNT = Counter("logcrawler_errors", "logcrawler_errors")
+
 
 def check_env_vars():
     if "VAT_LOG_ROOT" not in os.environ:

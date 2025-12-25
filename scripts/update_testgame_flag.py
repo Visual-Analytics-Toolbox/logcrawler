@@ -10,7 +10,7 @@ import os
 
 
 def main():
-    logs = client.logs.list()
+    logs = client.images.list(log=123)
 
     def sort_key_fn(log):
         return log.id
@@ -20,15 +20,9 @@ def main():
         log_path = log.log_path.lower()
         if "test" in log_path:
             print("\tis part of a testgame")
-            client.games.update(
-                id=log.game,
-                is_testgame=True
-            )
+            client.games.update(id=log.game, is_testgame=True)
         else:
-            client.games.update(
-                id=log.game,
-                is_testgame=False
-            )
+            client.games.update(id=log.game, is_testgame=False)
 
 
 if __name__ == "__main__":
