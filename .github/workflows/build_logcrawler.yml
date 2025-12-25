@@ -1,31 +1,27 @@
 name: build logcrawler container
 
 on:
+  workflow_dispatch:
   push:
     branches: ['main']
-    
-# This creates an environment variable called `IMAGE_NAME ` with the value `ghtoken_product_demo`.
+
 env:
   IMAGE_NAME: logcrawler
-#
+
 jobs:
-  # This pushes the image to GitHub Packages.
   push:
     runs-on: ubuntu-latest
     permissions:
       packages: write
       contents: read
-      #
+
     steps:
       - uses: actions/checkout@v4
-
       - name: Build image
         working-directory: ./
         run: docker build . --file Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
-
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-        #
       - name: Push image
         run: |
           IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
