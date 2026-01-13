@@ -37,6 +37,9 @@ def input_games(log_root_path, client):
     all_teams = get_all_team_names(client)
     for event in sorted(events, key=sort_key_fn):
         ev = Path(log_root_path) / event.event_folder
+        if  "lab-tests" in str(event.event_folder):
+            logging.debug(f"\tignoring {event.event_folder} folder for game insertion")
+            continue
         all_games = [f for f in ev.iterdir() if f.is_dir()]
         for game in sorted(all_games):
             logging.debug(f"parsing folder {game}")
@@ -46,7 +49,7 @@ def input_games(log_root_path, client):
                 or str(game.name) == "gc_logs"
                 or str(game.name) == "tcm_logs"
             ):
-                logging.debug(f"\tignoring {game.name} folder")
+                logging.debug(f"\tignoring {game.name} folder for game insertion")
                 continue
 
             try:
