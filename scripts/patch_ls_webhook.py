@@ -29,7 +29,7 @@ def main():
         else:
             print("\twebhook already exists")
             lc.webhooks.update(
-                id=[0].id,
+                id=a[0].id,
                 send_for_all_actions=False,
                 actions=["ANNOTATION_CREATED", "ANNOTATIONS_CREATED", "ANNOTATION_UPDATED", "ANNOTATIONS_DELETED"],
             )
