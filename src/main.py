@@ -10,6 +10,7 @@ from ingester import (
     input_logs,
     combine_logs,
     export_representation,
+    input_experiment_gamelogs,
 )
 from utils import check_folder_exists
 import logging
@@ -18,6 +19,8 @@ import os
 
 def main():
     logging.basicConfig(level=logging.INFO)
+    httpx_logger = logging.getLogger("httpx")
+    httpx_logger.setLevel(logging.ERROR)
     check_env_vars()
     log_root_path = os.environ.get("VAT_LOG_ROOT")
 
@@ -36,6 +39,7 @@ def main():
     input_lab_experiments(log_root_path, client)
     input_videos(log_root_path, client)
     input_logs(log_root_path, client)
+    input_experiment_gamelogs(log_root_path, client)
     combine_logs(log_root_path, client)
     export_representation(log_root_path, client)
     # create representation json

@@ -218,20 +218,13 @@ def combine_logs(log_root_path, client, force=False):
     # TODO add heinrichs pose representation here if it does not exist
     logs = client.logs.list()
     for data in sorted(logs, key=sort_key_fn):
-        log_folder_path = Path(data.log_path).parent  # data.log_path is path to file
-        log_path = Path(log_root_path) / log_folder_path
-        logging.debug(f"log_path: {str(log_path)}")
+        log_folder_path =  Path(log_root_path) / Path(data.log_path).parent  # data.log_path is path to file
+        logging.warning(f"log_folder_path: {str(log_folder_path)}")
 
-        if Path(log_path).is_file():
-            logging.debug(
-                "\tpath is a experiment log - no automatic combining here. If needed combine the log manually and add to the event list"
-            )
-            continue
-
-        combined_log_path = log_path / "combined.log"
-        gamelog_path = log_path / "game.log"
-        img_log_path = log_path / "images.log"
-        img_jpeg_log_path = log_path / "images_jpeg.log"
+        combined_log_path = log_folder_path / "combined.log"
+        gamelog_path = log_folder_path / "game.log"
+        img_log_path = log_folder_path / "images.log"
+        img_jpeg_log_path = log_folder_path / "images_jpeg.log"
 
         has_game_log = (
             Path(gamelog_path).is_file() and stat(str(gamelog_path)).st_size > 0
@@ -246,7 +239,7 @@ def combine_logs(log_root_path, client, force=False):
 
         if not has_game_log and (has_image_log or has_image_jpeg_log):
             logging.warning(
-                f"{str(log_path)}\n\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
+                f"{str(log_folder_path)}\n\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
             )
             continue
 

@@ -52,6 +52,7 @@ def input_lab_experiments(log_root_path, client):
                     response = client.experiment.create(
                         event=event.id,
                         name=experiment.name,
+                        experiment_folder=str(experiment).removeprefix(log_root_path).strip("/"),
                         type="Simple" if has_log_files else "Gamelog",
                     )
                     logging.debug(f"successfully inserted {experiment.name} in db")
