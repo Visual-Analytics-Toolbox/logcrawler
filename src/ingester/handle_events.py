@@ -18,9 +18,9 @@ def input_events(log_root_path, client):
                 with open(event / "comments.txt") as f:
                     comment = f.read()
             else:
-                #logging.getLogger().info(
+                # logging.getLogger().info(
                 #    f"No comments.txt found for event {event.name}"
-                #)
+                # )
                 comment = ""
             try:
                 new_event = client.events.create(
@@ -51,9 +51,9 @@ def input_lab_events(log_root_path, client):
                 with open(event / "comments.txt") as f:
                     comment = f.read()
             else:
-                #logging.getLogger().info(
+                # logging.getLogger().info(
                 #    f"No comments.txt found for event {event.name}"
-                #)
+                # )
                 comment = ""
             try:
                 new_event = client.events.create(

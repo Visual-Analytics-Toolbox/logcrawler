@@ -43,9 +43,9 @@ global_label_config = """
 """
 
 view_config = {
-    "title":"Default",
-    "hiddenColumns":{
-        "explore":[
+    "title": "Default",
+    "hiddenColumns": {
+        "explore": [
             "tasks:inner_id",
             "tasks:annotations_results",
             "tasks:annotations_ids",
@@ -58,9 +58,9 @@ view_config = {
             "tasks:updated_at",
             "tasks:updated_by",
             "tasks:avg_lead_time",
-            "tasks:draft_exists"
+            "tasks:draft_exists",
         ],
-        "labeling":[
+        "labeling": [
             "tasks:data.markdown_description",
             "tasks:id",
             "tasks:inner_id",
@@ -79,15 +79,17 @@ view_config = {
             "tasks:updated_at",
             "tasks:updated_by",
             "tasks:avg_lead_time",
-            "tasks:draft_exists"
-        ]
+            "tasks:draft_exists",
+        ],
     },
 }
 
-def natural_sort(l): 
+
+def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
     return sorted(l, key=alphanum_key)
+
 
 def get_images_per_log(v_client, log_id, camera):
     image_generator = v_client.image.list(log=log_id, camera=camera, limit=500)
@@ -116,8 +118,7 @@ def create_project_if_not_exist(client, project_names):
             continue
         else:
             project = client.projects.create(
-                title=name,
-                label_config=global_label_config
+                title=name, label_config=global_label_config
             )
             client.views.create(project=project.id, data=view_config)
 
@@ -128,35 +129,39 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
     # 1. Pre-calculate all needed project names and their IDs
     print("Pre-fetching project IDs...")
     existing_projects = list(client.projects.list(include="title,id"))
-    
+
     # Create a mapping from project_name to project_id
     project_map = {}
     for idx, image in enumerate(image_list):
         # The project name logic is based on idx:
         project_name = f"log-{log_id}_part-{idx // 1000}_{camera.lower()}"
-        
+
         if project_name not in project_map:
             # Find the ID for the project name and store it
             try:
-                project_id = next(p.id for p in existing_projects if p.title == project_name)
+                project_id = next(
+                    p.id for p in existing_projects if p.title == project_name
+                )
                 project_map[project_name] = project_id
             except StopIteration:
-                print(f"Warning: Project {project_name} not found. Skipping related images.")
+                print(
+                    f"Warning: Project {project_name} not found. Skipping related images."
+                )
                 # You might want to handle this differently, e.g., create the project
-                project_map[project_name] = None # Mark as not found to skip later
+                project_map[project_name] = None  # Mark as not found to skip later
 
     # 2. Fetch all existing task URLs for all relevant projects in a batch
     print("Pre-fetching existing task URLs...")
     # Get all unique project IDs that were found
     relevant_project_ids = set(pid for pid in project_map.values() if pid is not None)
-    
+
     # Structure to hold existing URLs: project_id -> set of image_urls
     existing_task_urls = collections.defaultdict(set)
-    
+
     for project_id in relevant_project_ids:
         # Fetch tasks for this project (API call outside the main loop)
-        all_tasks = client.tasks.list(project=project_id, include="data") 
-        
+        all_tasks = client.tasks.list(project=project_id, include="data")
+
         # Build the set for efficient O(1) lookup inside the loop
         for task in all_tasks:
             if "image" in task.data:
@@ -165,7 +170,7 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
     # 3. Iterate over images, perform efficient checks, and create/update
     print("Processing images...")
     base_url = "https://logs.berlin-united.com/"
-    
+
     # Pre-fetch views for projects to avoid repeated calls later
     view_map = {}
     for project_id in relevant_project_ids:
@@ -190,30 +195,34 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
             continue
 
         # Create Task (API call)
-        task_data={"image": image_full_url, "markdown_description": f"Log Url: [https://vat.berlin-united.com/api/images/{image.id}](https://vat.berlin-united.com/api/images/{image.id})"}
+        task_data = {
+            "image": image_full_url,
+            "markdown_description": f"Log Url: [https://vat.berlin-united.com/api/images/{image.id}](https://vat.berlin-united.com/api/images/{image.id})",
+        }
         ls_update_data[project_id].append(task_data)
 
         # Update Image URL (API call)
-        view = view_map[project_id] # O(1) lookup from pre-fetched map
+        view = view_map[project_id]  # O(1) lookup from pre-fetched map
 
         print(f"Imported task for index {idx}")
 
         # FIXME I need to add the tasks and then get their ids back without loosing the mapping to the image id
         json_obj = {
             "id": image.id,
-            "labelstudio_url": f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}"
+            "labelstudio_url": f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}",
         }
         image_update_data.append(json_obj)
 
         if idx % 200 == 0 and idx != 0:
-            for k,v in ls_update_data.items():
-                if len(v) == 0: continue
-                print(k,v)
-                #resp = client.projects.import_tasks(
+            for k, v in ls_update_data.items():
+                if len(v) == 0:
+                    continue
+                print(k, v)
+                # resp = client.projects.import_tasks(
                 #    id=PROJECT_ID,
                 #    request=tasks,
                 #    return_task_ids=True,
-                #)
+                # )
 
         """
         if idx % 100 == 0 and idx != 0:
@@ -240,7 +249,7 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
 
 def main():
     client = LabelStudio(
-        base_url='https://labelstudio-api.berlin-united.com',  
+        base_url="https://labelstudio-api.berlin-united.com",
         api_key="",
     )
 

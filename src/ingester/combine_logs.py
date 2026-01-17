@@ -57,8 +57,7 @@ def create_image_log_dict(image_log, first_image_is_top):
                         frame_number, image_log, f.tell() + 1 - file_size
                     )
                 )
-                (
-                )
+                ()
                 break
 
             if frame_number not in images_dict:

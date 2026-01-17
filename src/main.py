@@ -1,7 +1,16 @@
 from vaapi.client import Vaapi
 from prometheus_client import push_to_gateway
 from utils import check_env_vars, registry
-from ingester import input_events, input_lab_events, input_lab_experiments, input_games, input_videos, input_logs, combine_logs, export_representation
+from ingester import (
+    input_events,
+    input_lab_events,
+    input_lab_experiments,
+    input_games,
+    input_videos,
+    input_logs,
+    combine_logs,
+    export_representation,
+)
 from utils import check_folder_exists
 import logging
 import os
@@ -35,7 +44,12 @@ def main():
     logging.info("########################################")
     logging.info("################# Done #################")
     logging.info("########################################")
-    push_to_gateway('http://monitoring-prometheus-pushgateway.monitoring.svc.cluster.local:9091', job='logcrawler', registry=registry)
+    push_to_gateway(
+        "http://monitoring-prometheus-pushgateway.monitoring.svc.cluster.local:9091",
+        job="logcrawler",
+        registry=registry,
+    )
+
 
 if __name__ == "__main__":
     main()

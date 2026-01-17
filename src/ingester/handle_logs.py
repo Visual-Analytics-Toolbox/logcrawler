@@ -2,8 +2,9 @@ from pathlib import Path
 import logging
 import sys
 
-httpx_logger = logging.getLogger('httpx')
+httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.ERROR)
+
 
 def get_robot_version(head_number: str) -> str:
     # TODO: when we have a robot model we dont need this here anymore

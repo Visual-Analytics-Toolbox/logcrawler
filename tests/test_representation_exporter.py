@@ -1,6 +1,7 @@
 """
 Representation Exporter
 """
+
 from naoth.log import Reader as LogReader
 from naoth.log import Parser
 from pathlib import Path
@@ -46,7 +47,6 @@ def is_done(log, representation_file: str, force_flag: bool) -> bool:
     return repr_list_missing
 
 
-
-
-
-log_path = Path("/mnt/d/repl/2025-07-15_RC25/2025-07-17_11-45-00_Berlin United_vs_Nao Devils_half1/game_logs/1_15_Nao0006_250717-1504")
+log_path = Path(
+    "/mnt/d/repl/2025-07-15_RC25/2025-07-17_11-45-00_Berlin United_vs_Nao Devils_half1/game_logs/1_15_Nao0006_250717-1504"
+)

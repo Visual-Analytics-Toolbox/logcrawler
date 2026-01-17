@@ -13,7 +13,6 @@ The same structure could be happening in each events experiment folder
 FIXME: there are still subfolders that contain multiple experiments. Those should go into there own folders
 """
 
-
 from pathlib import Path
 import logging
 
@@ -34,6 +33,7 @@ def input_experiments(log_root_path, client):
 
             # TODO handle experiments logic here
 
+
 def input_lab_experiments(log_root_path, client):
     logging.info("################# Input Experiment Data #################")
     events = client.events.list()
@@ -44,7 +44,7 @@ def input_lab_experiments(log_root_path, client):
             all_experiments = [f for f in ev.iterdir() if f.is_dir()]
             for experiment in sorted(all_experiments):
                 logging.info(f"\t{experiment.name}")
-                # TODO figure out the experiment type
+
                 has_log_files = any(experiment.glob("*.log"))
                 logging.info(f"\t\thas log files:{has_log_files}")
                 # TODO: add function to handle_logs for each experiment of type game.log

@@ -1,6 +1,7 @@
 """
 Representation Exporter
 """
+
 from naoth.log import Reader as LogReader
 from naoth.log import Parser
 from pathlib import Path
