@@ -9,3 +9,5 @@ from .handle_logs import input_logs as input_logs
 from .handle_logs import input_experiment_gamelogs as input_experiment_gamelogs
 from .combine_logs import combine_logs as combine_logs
 from .representation_exporter import export_representation as export_representation
+from .calculate_logstatus_cognition import calculate_logstatus_cognition as calculate_logstatus_cognition
+from .calculate_logstatus_motion import calculate_logstatus_motion as calculate_logstatus_motion

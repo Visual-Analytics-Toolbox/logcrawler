@@ -532,7 +532,7 @@ requires-dist = [
     { name = "prometheus-client", specifier = ">=0.23.1" },
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "ruff", specifier = ">=0.14.0" },
-    { name = "vaapi", specifier = ">=0.7.17" },
+    { name = "vaapi", specifier = ">=0.7.18" },
 ]
 
 [[package]]
@@ -1494,7 +1494,7 @@ wheels = [
 
 [[package]]
 name = "vaapi"
-version = "0.7.17"
+version = "0.7.18"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1502,9 +1502,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/87/c9/27b0f7d58d0707396cfa6ca8c7bb4493992056ebbf8f3bf004b57748ee78/vaapi-0.7.17.tar.gz", hash = "sha256:888ab43d7bdc5f97c1cdab76e59deb5a3505c6ab157622eabb9d12aa4a6e8ccc", size = 39992, upload-time = "2026-01-17T21:36:00.856Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/62/e655b1210a8bab941b474d08a8d6ae21836d2eaa82c5d7ef3f61cab1bf29/vaapi-0.7.18.tar.gz", hash = "sha256:a3cac1e8f8c80fac1dce5d8b60d97276b236c010768aa648d9cd3e44d6e58597", size = 40029, upload-time = "2026-01-23T19:08:38.297Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/46/33d096ff6aa43014cf39a5cabd8033d2df3d8befe8a500aa08fdcf31e2c7/vaapi-0.7.17-py3-none-any.whl", hash = "sha256:df655be73ed3127afafb86c6722ef0452cb47874d5562642baee3485198c4bee", size = 67377, upload-time = "2026-01-17T21:35:59.543Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/81/8cf14b8a7e1bde4d27cc987465da3850e88532fca5682163568141684c76/vaapi-0.7.18-py3-none-any.whl", hash = "sha256:78c66ca721062f70398fdf48e40718e868ba9a4e576b8064525fcfb08dd30a24", size = 67368, upload-time = "2026-01-23T19:08:37.142Z" },
 ]
 
 [[package]]

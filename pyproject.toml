@@ -10,5 +10,5 @@ dependencies = [
     "prometheus-client>=0.23.1",
     "python-snappy>=0.7.3",
     "ruff>=0.14.0",
-    "vaapi>=0.7.17",
+    "vaapi>=0.7.18",
 ]
