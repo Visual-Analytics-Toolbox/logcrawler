@@ -75,6 +75,7 @@ def input_other_games(log_root_path, client):
                         score=row["score"],
                         start_time=date_object.isoformat(),
                         referees=refs,
+                        is_testgame=False,
                     )
                     response = client.games.create(
                         event=event.id,
@@ -84,6 +85,7 @@ def input_other_games(log_root_path, client):
                         score=row["score"],
                         start_time=date_object.isoformat(),
                         referees=refs,
+                        is_testgame=False,
                     )
         else:
             print(f"Error: The file '{file_path}' does not exist.")
