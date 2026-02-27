@@ -16,7 +16,12 @@ def input_videos(log_root_path, client):
     logging.info("################# Input Video Data #################")
     games = client.games.list()
     for game in games:
+        if not game.game_folder:
+            logging.debug(f"skipping - this is a game without a game_folder - proably game without us playing")
+            continue
+
         game_folder = Path(log_root_path) / game.game_folder
+
 
         video_folder = Path(game_folder) / "videos"
         if not video_folder.exists():
