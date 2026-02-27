@@ -6,6 +6,7 @@ from ingester import (
     input_lab_events,
     input_lab_experiments,
     input_games,
+    input_other_games,
     input_videos,
     input_logs,
     combine_logs,
@@ -38,6 +39,7 @@ def main():
     input_events(log_root_path, client)
     input_lab_events(log_root_path, client)
     input_games(log_root_path, client)
+    input_other_games(log_root_path, client)
     input_lab_experiments(log_root_path, client)
     input_videos(log_root_path, client)
     input_logs(log_root_path, client)
