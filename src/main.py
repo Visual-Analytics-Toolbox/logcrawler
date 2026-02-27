@@ -40,7 +40,6 @@ def main():
     input_lab_events(log_root_path, client)
     input_games(log_root_path, client)
     input_other_games(log_root_path, client)
-    quit()
     input_lab_experiments(log_root_path, client)
     input_videos(log_root_path, client)
     input_logs(log_root_path, client)

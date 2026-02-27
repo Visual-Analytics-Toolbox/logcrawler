@@ -64,7 +64,7 @@ def input_other_games(log_root_path, client):
                         logging.error(f"team {row['team2']} not found in db")
                         continue
 
-                    if all_teams[row["team1"]] == 4 or all_teams[row["team2"]] == 4:
+                    if row["team1"] == "Berlin United" or row["team2"] == "Berlin United":
                         logging.info(f"skipping inserting Berlin United games")
                         continue
 
