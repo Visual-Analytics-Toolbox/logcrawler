@@ -52,6 +52,7 @@ def input_other_games(log_root_path, client):
                     fieldnames=["date", "time", "team1", "team2", "score", "referees"],
                 )
                 for row in reader:
+                    print(f"{row["team1"]} - {row["team2"]}")
                     refs = row["referees"].strip("[]")
                     timestamp_str = f"{row['date']}_{row['time'].replace(':', '-')}-00"
                     date_object = datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")

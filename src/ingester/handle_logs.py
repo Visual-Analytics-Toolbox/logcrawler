@@ -42,6 +42,9 @@ def input_logs(log_root_path, client):
     logging.info("################# Input Log Data From Games #################")
     games = client.games.list()
     for game in sorted(games, key=sort_key_fn):
+        if not game.game_folder:
+            logging.debug(f"skipping - this is a game without a game_folder - proably game without us playing")
+            continue
         logging.info(f"{game.id}: {game.game_folder}")
         log_folder_path = Path(log_root_path) / game.game_folder / "game_logs"
 
