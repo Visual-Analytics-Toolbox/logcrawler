@@ -218,7 +218,9 @@ def combine_logs(log_root_path, client, force=False):
     # TODO add heinrichs pose representation here if it does not exist
     logs = client.logs.list()
     for data in sorted(logs, key=sort_key_fn):
-        log_folder_path =  Path(log_root_path) / Path(data.log_path).parent  # data.log_path is path to file
+        log_folder_path = (
+            Path(log_root_path) / Path(data.log_path).parent
+        )  # data.log_path is path to file
         logging.warning(f"log_folder_path: {str(log_folder_path)}")
 
         combined_log_path = log_folder_path / "combined.log"

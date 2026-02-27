@@ -43,42 +43,45 @@ def input_other_games(log_root_path, client):
             logging.debug(f"\tignoring {event.event_folder} folder for game insertion")
             continue
 
-        file_path = ev / Path('matches.csv')
+        file_path = ev / Path("matches.csv")
 
         if file_path.exists():
-            with open(file_path, mode='r', encoding='utf-8') as f:
-                reader = csv.DictReader(f, fieldnames=['date', 'time', 'team1', 'team2','score', 'referees'])
+            with open(file_path, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(
+                    f,
+                    fieldnames=["date", "time", "team1", "team2", "score", "referees"],
+                )
                 for row in reader:
-                    refs = row['referees'].strip('[]')
+                    refs = row["referees"].strip("[]")
                     timestamp_str = f"{row['date']}_{row['time'].replace(':', '-')}-00"
                     date_object = datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
 
-                    if not check_team_name(all_teams, row['team1']):
+                    if not check_team_name(all_teams, row["team1"]):
                         logging.error(f"team {row['team1']} not found in db")
                         continue
-                    if not check_team_name(all_teams, row['team2']):
+                    if not check_team_name(all_teams, row["team2"]):
                         logging.error(f"team {row['team2']} not found in db")
                         continue
-                    
-                    if all_teams[row['team1']] == 4 or all_teams[row['team2']] == 4:
+
+                    if all_teams[row["team1"]] == 4 or all_teams[row["team2"]] == 4:
                         logging.info(f"skipping inserting Berlin United games")
                         continue
 
                     response = client.games.create(
                         event=event.id,
-                        team1=all_teams[row['team1']],
-                        team2=all_teams[row['team2']],
+                        team1=all_teams[row["team1"]],
+                        team2=all_teams[row["team2"]],
                         half="half1",
-                        score=row['score'],
+                        score=row["score"],
                         start_time=date_object.isoformat(),
                         referees=refs,
                     )
                     response = client.games.create(
                         event=event.id,
-                        team1=all_teams[row['team1']],
-                        team2=all_teams[row['team2']],
+                        team1=all_teams[row["team1"]],
+                        team2=all_teams[row["team2"]],
                         half="half2",
-                        score=row['score'],
+                        score=row["score"],
                         start_time=date_object.isoformat(),
                         referees=refs,
                     )

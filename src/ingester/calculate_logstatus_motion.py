@@ -50,9 +50,11 @@ def add_sensorlog_representations(log, sensor_log_path, client, force):
         for idx, frame in enumerate(game_log):
             # stop parsing log if FrameInfo is missing
             try:
-                frame_number = frame['FrameInfo'].frameNumber
+                frame_number = frame["FrameInfo"].frameNumber
             except Exception as e:
-                logging.warning(f"FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one")
+                logging.warning(
+                    f"FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
+                )
                 break
             for repr in new_motion_status_dict:
                 try:
@@ -60,10 +62,12 @@ def add_sensorlog_representations(log, sensor_log_path, client, force):
                     new_motion_status_dict[repr] += 1
                 except AttributeError:
                     # TODO only print something when in debug mode
-                    #print("skip frame because representation is not present")
+                    # print("skip frame because representation is not present")
                     continue
                 except Exception as e:
-                    logging.error(f"error parsing {repr} in log {sensor_log_path} at frame {idx}")
+                    logging.error(
+                        f"error parsing {repr} in log {sensor_log_path} at frame {idx}"
+                    )
                     logging.error({e})
 
         try:
