@@ -115,6 +115,7 @@ def input_logs(log_root_path, client):
             try:
                 log_response = client.logs.create(
                     game=game.id,
+                    robot=robot_id,
                     player_number=int(playernumber),
                     log_path=log_path,
                     combined_log_path=combined_log_path,
@@ -124,21 +125,6 @@ def input_logs(log_root_path, client):
             except Exception as e:
                 logging.error(f"could not create or get log object in db: {e}")
                 continue
-
-            try:
-                logging.debug(f"\t\tupdate log {log_response.id}: {str(logfolder)}")
-                log_response = client.logs.update(
-                    id=log_response.id,
-                    robot=robot_id,
-                    player_number=int(playernumber),
-                    log_path=log_path,
-                    combined_log_path=combined_log_path,
-                    sensor_log_path=sensor_log_path,
-                    git_commit=hash,
-                )
-            except Exception as e:
-                logging.error(f"could not update log object in db: {e}")
-                sys.exit(1)
 
             # create an empty log status object here
             try:
