@@ -22,7 +22,7 @@ COPY --from=builder --chown=nonroot:nonroot /app /app
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
-
+ENV PYTHONUNBUFFERED=1
 # Use the non-root user to run our application
 USER nonroot
 
