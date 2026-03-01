@@ -94,7 +94,22 @@ def input_logs(log_root_path, client):
             robot_id = get_robot_id(client, body_serial)
 
             if not robot_id:
-                logging.error(f"robot not found for body_serial {body_serial}")
+                logging.error(f"robot not found for body_serial {body_serial} \n probably nao.info is in the wrong format")
+                """
+                Format it should be in: 
+                 os << bodyId                                 << std::endl
+                << NaoInfoTools::makeBodyNickName(bodyId) << std::endl
+                << headId                                 << std::endl
+                << NaoInfoTools::readRobotName()          << std::endl
+                << "Nao6"                                 << std::endl; // platform name
+
+                because of stupidity it was changed in some version of lola_adaptor to
+                os << headId                                 << std::endl
+                << bodyId                                 << std::endl
+                << NaoInfoTools::makeBodyNickName(bodyId) << std::endl
+                << NaoInfoTools::readRobotName()          << std::endl
+                << "Nao6"                                 << std::endl; // platform name
+                """
                 continue
 
             try:
