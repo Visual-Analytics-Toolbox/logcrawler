@@ -53,7 +53,7 @@ def main():
     # create representation json
     # add robot pose + patch representation file (maybe logstatus?)
     extract_images(log_root_path, client)
-    #input_images(log_root_path, client)
+    input_images(log_root_path, client)
 
     logging.info("########################################")
     logging.info("################# Done #################")

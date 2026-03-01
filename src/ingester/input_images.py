@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Generator, List
-from vaapi.client import Vaapi
 from time import sleep
-import argparse
 import os
 
 
@@ -27,12 +25,12 @@ def path_generator(
         yield batch
 
 
-def handle_insertion(individual_extracted_folder, log, camera, image_type):
+def handle_insertion(client, log_root_path, individual_extracted_folder, log, camera, image_type):
     print(f"\tadding images from {individual_extracted_folder.name} to db")
     if not Path(individual_extracted_folder).is_dir():
         return
 
-    if is_done(log.id, camera, image_type):
+    if is_done(client, log.id, camera, image_type):
         return
 
     # get list of frames  for this log
@@ -73,14 +71,14 @@ def handle_insertion(individual_extracted_folder, log, camera, image_type):
         try:
             _ = client.image.bulk_create(data_list=image_ar)
         except Exception as e:
-            print(f"error inputing the data {log_path}")
+            print(f"error inputing the data {log.log_path}")
             print(e)
 
         sleep(0.5)
     # sleep(5)
 
 
-def is_done(log_id, camera, image_type):
+def is_done(client, log_id, camera, image_type):
     response = client.image.get_image_count(log=log_id, camera=camera, type=image_type)
     db_count = int(response["count"])
 
@@ -121,15 +119,18 @@ def input_images(log_root_path, client):
         # TODO could we just switch game_logs with extracted in the paths?
         # FIXME handle experiments here
         robot_foldername = log_path.parent.name
-        game_folder = log_path.parent.parent.parent.name
-        extracted_path = log_path.parent.parent.parent / "extracted" / robot_foldername
-
+        
+        if not log.game:
+            extracted_path = log_path.parent / "extracted" / robot_foldername
+        else:
+            extracted_path = log_path.parent.parent.parent / "extracted" / robot_foldername
+        
         bottom_path = extracted_path / "log_bottom"
         top_path = extracted_path / "log_top"
         bottom_path_jpg = extracted_path / "log_bottom_jpg"
         top_path_jpg = extracted_path / "log_top_jpg"
 
-        handle_insertion(bottom_path, log, camera="BOTTOM", image_type="RAW")
-        handle_insertion(top_path, log, camera="TOP", image_type="RAW")
-        handle_insertion(bottom_path_jpg, log, camera="BOTTOM", image_type="JPEG")
-        handle_insertion(top_path_jpg, log, camera="TOP", image_type="JPEG")
+        handle_insertion(client, log_root_path, bottom_path, log, camera="BOTTOM", image_type="RAW")
+        handle_insertion(client, log_root_path, top_path, log, camera="TOP", image_type="RAW")
+        handle_insertion(client, log_root_path, bottom_path_jpg, log, camera="BOTTOM", image_type="JPEG")
+        handle_insertion(client, log_root_path, top_path_jpg, log, camera="TOP", image_type="JPEG")
