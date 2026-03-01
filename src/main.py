@@ -14,6 +14,7 @@ from ingester import (
     input_experiment_gamelogs,
     calculate_logstatus_cognition,
     calculate_logstatus_motion,
+    input_cognition_frames,
     extract_images,
     input_images,
 )
@@ -52,6 +53,7 @@ def main():
     calculate_logstatus_motion(log_root_path, client)
     # create representation json
     # add robot pose + patch representation file (maybe logstatus?)
+    input_cognition_frames(log_root_path, client)
     extract_images(log_root_path, client)
     input_images(log_root_path, client)
 
