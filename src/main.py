@@ -14,6 +14,8 @@ from ingester import (
     input_experiment_gamelogs,
     calculate_logstatus_cognition,
     calculate_logstatus_motion,
+    extract_images,
+    input_images,
 )
 from utils import check_folder_exists
 import logging
@@ -50,6 +52,8 @@ def main():
     calculate_logstatus_motion(log_root_path, client)
     # create representation json
     # add robot pose + patch representation file (maybe logstatus?)
+    extract_images(log_root_path, client)
+    #input_images(log_root_path, client)
 
     logging.info("########################################")
     logging.info("################# Done #################")

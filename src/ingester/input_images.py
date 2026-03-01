@@ -108,28 +108,18 @@ def is_done(log_id, camera, image_type):
     return False
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--reverse", action="store_true", default=False)
-    args = parser.parse_args()
-
-    # FIXME handle the case that frame does not exist explicitely
-    log_root_path = os.environ.get("VAT_LOG_ROOT")
-    client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
-
+def input_images(log_root_path, client):
     existing_data = client.logs.list()
 
     def myfunc(log):
         return log.id
-
-    for log in sorted(existing_data, key=myfunc, reverse=args.reverse):
+    
+    for log in sorted(existing_data, key=myfunc):
         print(f"{log.id}: {log.log_path}")
         log_path = Path(log_root_path) / log.log_path
 
         # TODO could we just switch game_logs with extracted in the paths?
+        # FIXME handle experiments here
         robot_foldername = log_path.parent.name
         game_folder = log_path.parent.parent.parent.name
         extracted_path = log_path.parent.parent.parent / "extracted" / robot_foldername

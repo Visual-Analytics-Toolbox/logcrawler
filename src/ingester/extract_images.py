@@ -1,20 +1,18 @@
 import queue
 import os
-from linetimer import CodeTimer
 from naoth.log import Reader as LogReader
 from naoth.log import Parser
 from pathlib import Path
-import argparse
 import concurrent.futures
 import subprocess
 import numpy as np
 import io
 from PIL import PngImagePlugin
 from PIL import Image as PIL_Image
-from vaapi.client import Vaapi
 
 
-def is_done(log):
+
+def is_done(client, log_root_path, log):
     # get the log status object for a given log_id
     response = client.log_status.list(log=log.id)
 
@@ -35,7 +33,11 @@ def is_done(log):
 
     # this has to check how many files are in the folder
     log_path = Path(log_root_path) / log.log_path
-    extracted_path = str(log_path.parent).replace("game_logs", "extracted")
+
+    if not log.game:
+        extracted_path = str(log_path.parent / "extracted")
+    else:
+        extracted_path = str(log_path.parent).replace("game_logs", "extracted")
 
     jpg_bottom_path = Path(extracted_path) / "log_bottom_jpg"
     jpg_top_path = Path(extracted_path) / "log_top_jpg"
@@ -49,7 +51,7 @@ def is_done(log):
     print("\tcalculating num bottom images in folder")
     num_bottom = (
         subprocess.run(
-            f'./fast_ls "{bottom_path}"', shell=True, capture_output=True, text=True
+            f'fast_ls "{bottom_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if bottom_path.is_dir()
         else 0
@@ -58,7 +60,7 @@ def is_done(log):
     print("\tcalculating num top images in folder")
     num_top = (
         subprocess.run(
-            f'./fast_ls "{top_path}"', shell=True, capture_output=True, text=True
+            f'fast_ls "{top_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if top_path.is_dir()
         else 0
@@ -67,7 +69,7 @@ def is_done(log):
     print("\tcalculating num bottom jpeg images in folder")
     num_jpg_bottom = (
         subprocess.run(
-            f'./fast_ls "{jpg_bottom_path}"', shell=True, capture_output=True, text=True
+            f'fast_ls "{jpg_bottom_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if jpg_bottom_path.is_dir()
         else 0
@@ -76,7 +78,7 @@ def is_done(log):
     print("\tcalculating num top jpeg images in folder")
     num_jpg_top = (
         subprocess.run(
-            f'./fast_ls "{jpg_top_path}"', shell=True, capture_output=True, text=True
+            f'fast_ls "{jpg_top_path}"', shell=True, capture_output=True, text=True
         ).stdout.strip()
         if jpg_top_path.is_dir()
         else 0
@@ -104,7 +106,7 @@ def is_done(log):
     return True
 
 
-def export_images(img):
+def export_images(img, log, out_bottom, out_bottom_jpg, out_top, out_top_jpg):
     """
     creates two folders:
         <logfile name>_top
@@ -299,35 +301,21 @@ def worker(data_queue):
             if batch is None:  # Sentinel value to exit
                 break
             # FIXME: argh I though image_data contains more fields then 3
-            for image_data in batch:
+            for data in batch:
                 # unpacking 1 tuple here
-                (image,) = image_data
-                export_images([image])
+                (image,log, out_bottom, out_bottom_jpg, out_top, out_top_jpg) = data
+                export_images([image], log, out_bottom, out_bottom_jpg, out_top, out_top_jpg)
             data_queue.task_done()
         except queue.Empty:
             continue
 
-
-if __name__ == "__main__":
-    # FIXME aborting this script can result in broken images being written
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--force", action="store_true", default=False)
-    parser.add_argument("-r", "--reverse", action="store_true", default=False)
-    args = parser.parse_args()
-
-    log_root_path = os.environ.get("VAT_LOG_ROOT")
-
-    client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
-
+def extract_images(log_root_path, client):
     existing_data = client.logs.list()
 
     def sort_key_fn(log):
         return log.id
 
-    for log in sorted(existing_data, key=sort_key_fn, reverse=args.reverse):
+    for log in sorted(existing_data, key=sort_key_fn):
         log_path = Path(log_root_path) / Path(log.combined_log_path)
 
         print(f"{log.id}: {log.combined_log_path}")
@@ -336,12 +324,15 @@ if __name__ == "__main__":
             print("\tcouldnt find a valid log file")
             continue
 
-        if is_done(log):
+        if is_done(client, log_root_path, log):
             continue
 
         data_queue = queue.Queue()
-
-        extracted_folder = str(log_path.parent).replace("game_logs", "extracted")
+        # define different extract folders for games and experiments
+        if not log.game:
+            extracted_folder = str(log_path.parent / "extracted")
+        else:
+            extracted_folder = str(log_path.parent).replace("game_logs", "extracted")
 
         out_top = extracted_folder / Path("log_top")
         out_bottom = extracted_folder / Path("log_bottom")
@@ -355,54 +346,51 @@ if __name__ == "__main__":
         num_threads = os.cpu_count() * 2
         batch_size = 50  # Adjust based on your specific use case
 
-        with CodeTimer("Total"):
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=num_threads
-            ) as executor:
-                # Start worker threads
-                futures = [
-                    executor.submit(worker, data_queue) for _ in range(num_threads)
-                ]
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=num_threads
+        ) as executor:
+            # Start worker threads
+            futures = [
+                executor.submit(worker, data_queue) for _ in range(num_threads)
+            ]
 
-                my_parser = Parser()
-                my_parser.register("ImageJPEG", "Image")
-                my_parser.register("ImageJPEGTop", "Image")
+            my_parser = Parser()
+            my_parser.register("ImageJPEG", "Image")
+            my_parser.register("ImageJPEGTop", "Image")
 
-                with CodeTimer("Reading and processing logs"):
-                    with LogReader(log_path, my_parser) as reader:
+            with LogReader(log_path, my_parser) as reader:
+                batch = []
+                for frame in reader.read():
+                    try:
+                        frame_number = frame["FrameInfo"].frameNumber
+                        frame_time = frame["FrameInfo"].time
+                    except Exception as e:
+                        print(e)
+                        print(
+                            "FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
+                        )
+                        # print(len(frame_array))
+                        # print(f"last frame number was {frame_array[-1]}") # FIXME does not work if its the first frame or every 100th
+                        break
+                    image = get_images(frame)
+
+                    # Note: its important that this is a tuple
+                    batch.append((image, log, out_bottom, out_bottom_jpg, out_top, out_top_jpg))
+                    if len(batch) >= batch_size:
+                        data_queue.put(batch)
                         batch = []
-                        for frame in reader.read():
-                            try:
-                                frame_number = frame["FrameInfo"].frameNumber
-                                frame_time = frame["FrameInfo"].time
-                            except Exception as e:
-                                print(e)
-                                print(
-                                    "FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
-                                )
-                                # print(len(frame_array))
-                                # print(f"last frame number was {frame_array[-1]}") # FIXME does not work if its the first frame or every 100th
-                                break
-                            image = get_images(frame)
+                if batch:  # Put any remaining items
+                    data_queue.put(batch)
 
-                            # Note: its important that this is a tuple
-                            batch.append((image,))
-                            if len(batch) >= batch_size:
-                                data_queue.put(batch)
-                                batch = []
-                        if batch:  # Put any remaining items
-                            data_queue.put(batch)
+            # Wait for all tasks to be completed
+            data_queue.join()
 
-                with CodeTimer("Writing images"):
-                    # Wait for all tasks to be completed
-                    data_queue.join()
+            # Signal worker threads to exit
+            for _ in range(num_threads):
+                data_queue.put(None)
 
-                # Signal worker threads to exit
-                for _ in range(num_threads):
-                    data_queue.put(None)
-
-                # Wait for all threads to complete
-                concurrent.futures.wait(futures)
+            # Wait for all threads to complete
+            concurrent.futures.wait(futures)
 
         # HACK delete image folders if they are empty - this is just so that looking at the distracted folder is not confusing for humans
         if not any(out_top_jpg.iterdir()):

@@ -16,3 +16,5 @@ from .calculate_logstatus_cognition import (
 from .calculate_logstatus_motion import (
     calculate_logstatus_motion as calculate_logstatus_motion,
 )
+from .extract_images import extract_images as extract_images
+from .input_images import input_images as input_images
