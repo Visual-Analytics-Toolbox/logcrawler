@@ -73,6 +73,7 @@ def handle_insertion(client, log_root_path, individual_extracted_folder, log, ca
         except Exception as e:
             print(f"error inputing the data {log.log_path}")
             print(e)
+            return
 
         sleep(0.5)
     # sleep(5)
