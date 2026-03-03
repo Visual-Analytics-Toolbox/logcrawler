@@ -122,7 +122,34 @@ def create_project_if_not_exist(client, project_names):
             )
             client.views.create(project=project.id, data=view_config)
 
-            # TODO create webhook here
+            print(f"\tcreate webhook for project {name}")
+            existing_webhook = client.webhooks.list(project=project.id)
+            if not existing_webhook:
+                response = client.webhooks.create(
+                    url="https://vat.berlin-united.com/api/image/validate",
+                    headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
+                    is_active=True,
+                    project=project.id,
+                    actions=[
+                        "ANNOTATION_CREATED",
+                        "ANNOTATIONS_CREATED",
+                        "ANNOTATION_UPDATED",
+                        "ANNOTATIONS_DELETED",
+                    ],
+                    send_for_all_actions=False,
+                )
+            else:
+                print(f"\twebhook already exists for project {name}")
+                client.webhooks.update(
+                    id=existing_webhook[0].id,
+                    send_for_all_actions=False,
+                    actions=[
+                        "ANNOTATION_CREATED",
+                        "ANNOTATIONS_CREATED",
+                        "ANNOTATION_UPDATED",
+                        "ANNOTATIONS_DELETED",
+                    ],
+                )
 
 
 def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
@@ -206,24 +233,25 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
 
         print(f"Imported task for index {idx}")
 
-        # FIXME I need to add the tasks and then get their ids back without loosing the mapping to the image id
-        json_obj = {
-            "id": image.id,
-            "labelstudio_url": f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}",
-        }
-        image_update_data.append(json_obj)
+        
 
         if idx % 200 == 0 and idx != 0:
             for k, v in ls_update_data.items():
                 if len(v) == 0:
                     continue
                 print(k, v)
-                # resp = client.projects.import_tasks(
-                #    id=PROJECT_ID,
+                #resp = client.projects.import_tasks(
+                #    id=project_id,
                 #    request=tasks,
                 #    return_task_ids=True,
-                # )
+                #)
 
+        # FIXME I need to add the tasks and then get their ids back without loosing the mapping to the image id
+        json_obj = {
+            "id": image.id,
+            "labelstudio_url": f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}",
+        }
+        image_update_data.append(json_obj)
         """
         if idx % 100 == 0 and idx != 0:
             try:
@@ -246,11 +274,10 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
 
     print("Import complete.")
 
-
-def main():
+def run_labelstudio_insert():
     client = LabelStudio(
         base_url="https://labelstudio-api.berlin-united.com",
-        api_key="",
+        api_key=os.environ.get("LABELSTUDIO_API_KEY"),
     )
 
     v_client = Vaapi(
@@ -261,7 +288,7 @@ def main():
     logs = v_client.logs.list()
 
     for log in sorted(logs, key=lambda x: x.id):
-        if log.id < 126:
+        if log.id != 679:
             continue
         print(f"handling log {log.id}")
         for camera in ["BOTTOM", "TOP"]:
@@ -273,4 +300,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_labelstudio_insert()

@@ -13,7 +13,8 @@ def scandir_yield_files(directory):
 
 
 def path_generator(
-    directory: str, batch_size: int = 200
+    directory: str, 
+    batch_size: int = 200
 ) -> Generator[List[str], None, None]:
     batch = []
     for path in scandir_yield_files(directory):
@@ -26,7 +27,10 @@ def path_generator(
 
 
 def handle_insertion(client, log_root_path, individual_extracted_folder, log, camera, image_type):
-    print(f"\tadding images from {individual_extracted_folder.name} to db")
+    print(f"\tadding images from {individual_extracted_folder} to db")
+
+    # return silently if the folder does not exist or the argument is not a folder
+    # this could be the case for the raw image folder if now raw images exist in the logs and therefore were not extracted
     if not Path(individual_extracted_folder).is_dir():
         return
 
@@ -103,7 +107,7 @@ def is_done(client, log_id, camera, image_type):
     if target_count == db_count:
         print("\t\tall images are already inserted")
         return True
-
+    print(f"\t\tmissing {target_count} images in the db")
     return False
 
 
@@ -122,7 +126,7 @@ def input_images(log_root_path, client):
         robot_foldername = log_path.parent.name
         
         if not log.game:
-            extracted_path = log_path.parent / "extracted" / robot_foldername
+            extracted_path = log_path.parent / "extracted"
         else:
             extracted_path = log_path.parent.parent.parent / "extracted" / robot_foldername
         
