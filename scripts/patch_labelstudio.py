@@ -1,23 +1,28 @@
-# TODO patch all projects to have webhooks
 from label_studio_sdk import LabelStudio
 import os
 
+def patch_project_colors(client):
 
-def main():
-    lc = LabelStudio(
-        base_url="https://labelstudio-api.berlin-united.com",
-        api_key=os.environ.get("VAT_LABELSTUDIO_TOKEN"),
-    )
+    existing_projects = client.projects.list(include="id")
+    for project in existing_projects:
+        print(f"updating color for project {project.id}")
+        client.projects.update(
+            id=project.id,
+            color='#CC6FBE',
+        )
+        
 
-    existing_projects = list(lc.projects.list(include="title,id"))
+def patch_ls_webhook(client):
+
+    existing_projects = list(client.projects.list(include="title,id"))
     for project in existing_projects:
         print(project.title)
-        a = lc.webhooks.list(project=project.id)
+        a = client.webhooks.list(project=project.id)
         print(f"\t{a}")
 
         if not a:
             print("\tTODO: create webhook")
-            response = lc.webhooks.create(
+            response = client.webhooks.create(
                 url="https://vat.berlin-united.com/api/image/validate",
                 headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
                 is_active=True,
@@ -33,7 +38,7 @@ def main():
             print(f"\t{response}")
         else:
             print("\twebhook already exists")
-            lc.webhooks.update(
+            client.webhooks.update(
                 id=a[0].id,
                 send_for_all_actions=False,
                 actions=[
@@ -46,4 +51,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    client = LabelStudio(
+        base_url="https://labelstudio-api.berlin-united.com",
+        api_key=os.environ.get("LABELSTUDIO_API_KEY"),
+    )
+    #patch_ls_webhook(client)
+    patch_project_colors(client)

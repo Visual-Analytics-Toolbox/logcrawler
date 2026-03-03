@@ -122,7 +122,34 @@ def create_project_if_not_exist(client, project_names):
             )
             client.views.create(project=project.id, data=view_config)
 
-            # TODO create webhook here
+            print(f"\tcreate webhook for project {name}")
+            existing_webhook = client.webhooks.list(project=project.id)
+            if not existing_webhook:
+                response = client.webhooks.create(
+                    url="https://vat.berlin-united.com/api/image/validate",
+                    headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
+                    is_active=True,
+                    project=project.id,
+                    actions=[
+                        "ANNOTATION_CREATED",
+                        "ANNOTATIONS_CREATED",
+                        "ANNOTATION_UPDATED",
+                        "ANNOTATIONS_DELETED",
+                    ],
+                    send_for_all_actions=False,
+                )
+            else:
+                print(f"\twebhook already exists for project {name}")
+                client.webhooks.update(
+                    id=existing_webhook[0].id,
+                    send_for_all_actions=False,
+                    actions=[
+                        "ANNOTATION_CREATED",
+                        "ANNOTATIONS_CREATED",
+                        "ANNOTATION_UPDATED",
+                        "ANNOTATIONS_DELETED",
+                    ],
+                )
 
 
 def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
@@ -175,8 +202,8 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
     view_map = {}
     for project_id in relevant_project_ids:
         view_map[project_id] = client.views.list(project=project_id)[0]
-
-    image_update_data = list()
+    
+    # create the tasks in labelstudio here
     ls_update_data = defaultdict(list)
     for idx, image in enumerate(image_list):
         # Calculate project name and get ID from pre-calculated map (O(1) lookup)
@@ -201,56 +228,44 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
         }
         ls_update_data[project_id].append(task_data)
 
-        # Update Image URL (API call)
-        view = view_map[project_id]  # O(1) lookup from pre-fetched map
+    print(f"Imported tasks")
+    for k, v in ls_update_data.items():
 
-        print(f"Imported task for index {idx}")
+        if len(v) == 0:
+            continue
+        resp = client.projects.import_tasks(
+            id=k,
+            request=v,
+            return_task_ids=True,
+        )
 
-        # FIXME I need to add the tasks and then get their ids back without loosing the mapping to the image id
-        json_obj = {
-            "id": image.id,
-            "labelstudio_url": f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}",
-        }
-        image_update_data.append(json_obj)
+    # Patch VAT Image data with link to labelstudio task
+    for project_id in relevant_project_ids:
 
-        if idx % 200 == 0 and idx != 0:
-            for k, v in ls_update_data.items():
-                if len(v) == 0:
-                    continue
-                print(k, v)
-                # resp = client.projects.import_tasks(
-                #    id=PROJECT_ID,
-                #    request=tasks,
-                #    return_task_ids=True,
-                # )
+        # Fetch tasks for this project (API call outside the main loop)
+        all_tasks = list(client.tasks.list(project=project_id, include="data,id"))
 
-        """
-        if idx % 100 == 0 and idx != 0:
+        for task_idx, task in enumerate(all_tasks):
+            image_id = task.data["markdown_description"].split('/')[-1].rstrip(')')
+            print("task id", task.id)
+
             try:
-                response = v_client.image.bulk_update(data=image_update_data)
-                image_update_data.clear()
+                response = v_client.image.update(
+                    id=int(image_id),
+                    labelstudio_url=f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view_map[project_id].id}&task={task.id}",
+                )
+
             except Exception as e:
                 print(e)
                 print("error inputing the image_update_data")
                 quit()
-        """
-    """
-    if len(image_update_data) > 0:
-        try:
-            response = v_client.image.bulk_update(data=image_update_data)
-        except Exception as e:
-            print(e)
-            print("error inputing the data")
-            quit()
-    """
 
     print("Import complete.")
 
-
-def main():
+def run_labelstudio_insert():
     client = LabelStudio(
         base_url="https://labelstudio-api.berlin-united.com",
-        api_key="",
+        api_key=os.environ.get("LABELSTUDIO_API_KEY"),
     )
 
     v_client = Vaapi(
@@ -261,7 +276,7 @@ def main():
     logs = v_client.logs.list()
 
     for log in sorted(logs, key=lambda x: x.id):
-        if log.id < 126:
+        if log.id <= 674:
             continue
         print(f"handling log {log.id}")
         for camera in ["BOTTOM", "TOP"]:
@@ -273,4 +288,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_labelstudio_insert()
