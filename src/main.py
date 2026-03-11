@@ -57,7 +57,7 @@ def main():
     input_cognition_frames(log_root_path, client)
     extract_images(log_root_path, client)
     input_images(log_root_path, client)
-    run_labelstudio_insert(log_root_path, client)
+    run_labelstudio_insert()
     logging.info("########################################")
     logging.info("################# Done #################")
     logging.info("########################################")
