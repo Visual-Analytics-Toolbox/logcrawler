@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 
 
-event_list = ["2024-07-15_RC24", "2025-03-12-GO25", "2025-07-15_RC25"]
+event_list = ["2024-07-15_RC24", "2025-03-12-GO25", "2025-07-15_RC25", "2026-03-10-GO26"]
 lab_experiments = ["2026_lab-tests"]
 # TODO: at ifa and other test events we play against ourselves: how should we deal with this in our db?
 
