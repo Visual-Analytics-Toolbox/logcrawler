@@ -47,10 +47,7 @@ def input_other_games(log_root_path, client):
 
         if file_path.exists():
             with open(file_path, mode="r", encoding="utf-8") as f:
-                reader = csv.DictReader(
-                    f,
-                    fieldnames=["date", "time", "team1", "team2", "score", "referees"],
-                )
+                reader = csv.DictReader(f)
                 for row in reader:
                     refs = row["referees"].strip("[]")
                     timestamp_str = f"{row['date']}_{row['time'].replace(':', '-')}-00"
