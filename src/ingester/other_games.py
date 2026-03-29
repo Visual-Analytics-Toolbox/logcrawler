@@ -63,26 +63,66 @@ def input_other_games(log_root_path, client):
                     if row["team1"] == "Berlin United" or row["team2"] == "Berlin United":
                         logging.info(f"skipping inserting Berlin United games")
                         continue
+                    
+                    # handle half 1
+                    try:
+                        response = client.games.create(
+                            event=event.id,
+                            team1=all_teams[row["team1"]],
+                            team2=all_teams[row["team2"]],
+                            half="half1",
+                            score=row["score"],
+                            start_time=date_object.isoformat(),
+                            referees=refs,
+                            is_testgame=False,
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"error occured when trying to create game {row["team1"]} vs {row["team2"]} half1 : {e}"
+                        )
+                        continue
+                    try:
+                        response = client.games.update(
+                            id = response.id,
+                            field = row["field"],
+                            referees=refs,
+                            score=row["score"],
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"error occured when trying to update game {row["team1"]} vs {row["team2"]} half1 : {e}"
+                        )
+                        continue
 
-                    response = client.games.create(
-                        event=event.id,
-                        team1=all_teams[row["team1"]],
-                        team2=all_teams[row["team2"]],
-                        half="half1",
-                        score=row["score"],
-                        start_time=date_object.isoformat(),
-                        referees=refs,
-                        is_testgame=False,
-                    )
-                    response = client.games.create(
-                        event=event.id,
-                        team1=all_teams[row["team1"]],
-                        team2=all_teams[row["team2"]],
-                        half="half2",
-                        score=row["score"],
-                        start_time=date_object.isoformat(),
-                        referees=refs,
-                        is_testgame=False,
-                    )
+                    # handle half 2
+                    try:
+                        response = client.games.create(
+                            event=event.id,
+                            team1=all_teams[row["team1"]],
+                            team2=all_teams[row["team2"]],
+                            half="half2",
+                            score=row["score"],
+                            start_time=date_object.isoformat(),
+                            referees=refs,
+                            is_testgame=False,
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"error occured when trying to create game {row["team1"]} vs {row["team2"]} half2 : {e}"
+                        )
+                        continue
+
+                    try:
+                        response = client.games.update(
+                            id = response.id,
+                            field = row["field"],
+                            referees=refs,
+                            score=row["score"],
+                        )
+                    except Exception as e:
+                        logging.error(
+                            f"error occured when trying to update game {row["team1"]} vs {row["team2"]} half2 : {e}"
+                        )
+                        continue
         else:
             print(f"Error: The file '{file_path}' does not exist.")
