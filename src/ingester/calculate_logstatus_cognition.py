@@ -5,7 +5,7 @@ from naoth.log import Parser
 from google.protobuf.json_format import MessageToDict
 
 
-def is_done(log_id, status_dict, client):
+def is_done(log_id: int, status_dict, client):
     new_dict = status_dict.copy()
     try:
         # we use list here because we only know the log_id here and not the if of the logstatus object
@@ -103,7 +103,7 @@ def add_gamelog_representations(log, log_path, client, force):
             quit()
 
 
-def calculate_logstatus_cognition(log_root_path, client):
+def calculate_logstatus_cognition(log_root_path: str, client):
     existing_data = client.logs.list()
 
     def sort_key_fn(log):

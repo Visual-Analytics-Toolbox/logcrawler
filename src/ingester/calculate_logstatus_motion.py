@@ -5,7 +5,7 @@ from naoth.log import Parser
 from google.protobuf.json_format import MessageToDict
 
 
-def is_done_motion(log_id, status_dict, client):
+def is_done_motion(log_id: int, status_dict, client):
     new_dict = status_dict.copy()
     try:
         # we use list here because we only know the log_id here and not the if of the logstatus object
