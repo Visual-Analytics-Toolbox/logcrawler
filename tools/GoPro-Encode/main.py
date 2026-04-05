@@ -3,6 +3,21 @@ from pathlib import Path
 from telemetry_parser import Parser as GPMFParser
 
 
+def is_already_reencoded(filepath):
+    cmd = [
+        "ffprobe", "-v", "error", 
+        "-select_streams", "v:0", 
+        "-show_entries", "stream_tags=encoder", 
+        "-of", "default=noprint_wrappers=1:nokey=1", 
+        str(filepath)
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    # If "gopro" is in the encoder tag, we have to encode the video
+    encoded = "gopro" not in result.stdout.lower()
+    return encoded
+
+
 def process_video(input_path):
     # Create output path (modify as needed)
     output_path = video_input.replace("_GoPro", "_GoPro_reencoded")
@@ -23,7 +38,7 @@ def process_video(input_path):
         "-c:v",
         "libx264",
         "-crf",
-        "18",
+        "23",
         "-c:a",
         "aac",
         "-c:s",
@@ -49,18 +64,12 @@ def process_video(input_path):
 
 
 video_list = [
-    "/mnt/repl/2025-03-12-GO25/2025-03-13_17-30-00_BerlinUnited_vs_HTWK_half1/videos/2025-03-13_17-30-00_Berlin United_vs_HTWK Robots_half1_Field-A_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-13_17-30-00_BerlinUnited_vs_HTWK_half2/videos/2025-03-13_17-30-00_Berlin United_vs_HTWK Robots_half2_Field-A_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-14_10-10-00_BerlinUnited_vs_NaoDevils_half2/videos/2025-03-14_10-10-00_Berlin United_vs_Nao Devils_half2_Field-B_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-14_15-10-00_BerlinUnited_vs_DutchNaoTeam_half1/videos/2025-03-14_15-10-00_Berlin United_vs_Dutch Nao Team_half1_Field-B_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-14_15-10-00_BerlinUnited_vs_DutchNaoTeam_half2/videos/2025-03-14_15-10-00_Berlin United_vs_Dutch Nao Team_half2_Field-B_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-15_11-40-00_BerlinUnited_vs_BHuman_half1/videos/2025-03-15_11-40-00_BerlinUnited_vs_BHuman_half1_Field-B_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-15_11-40-00_BerlinUnited_vs_BHuman_half2/videos/2025-03-15_11-40-00_BerlinUnited_vs_BHuman_half2_Field-B_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-15_15-00-00_BerlinUnited_vs_DutchNaoTeam_half1/videos/2025-03-15_15-00-00_BerlinUnited_vs_DutchNaoTeam_half1_Field-A_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-15_15-00-00_BerlinUnited_vs_DutchNaoTeam_half2/videos/2025-03-15_15-00-00_BerlinUnited_vs_DutchNaoTeam_half2_Field-A_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-15_17-15-00_BerlinUnited_vs_Hulks_half1/videos/2025-03-15_17-15-00_BerlinUnited_vs_Hulks_half1_Field-B_GoPro.mp4",
-    "/mnt/repl/2025-03-12-GO25/2025-03-15_17-15-00_BerlinUnited_vs_Hulks_half2/videos/2025-03-15_17-15-00_BerlinUnited_vs_Hulks_half2_Field-B_GoPro.mp4",
+    "/mnt/d/logs/2025-03-12-GO25/videos/2025-03-13_10-00-00_B-Human_vs_HTWK Robots_half1_Field-A_GoPro.mp4",
+    "/mnt/d/logs/2025-03-12-GO25/videos/2025-03-13_10-00-00_B-Human_vs_HTWK Robots_half1_Field-A_GoPro2.mp4",
 ]
 
+
 for video_input in video_list:
-    process_video(video_input)
+    encoded = is_already_reencoded(video_input)
+    if not encoded:
+        process_video(video_input)
