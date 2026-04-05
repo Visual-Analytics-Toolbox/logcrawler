@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS c-builder
+FROM debian:trixie-slim AS c-builder
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev
 
 WORKDIR /build
@@ -8,7 +8,7 @@ RUN gcc -O3 -o fast_ls fast_ls.c
 
 # -----------------------------------------------------------
 
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.12-trixie-slim AS builder
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 WORKDIR /app
@@ -23,7 +23,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # -----------------------------------------------------------
 
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-trixie
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 # Setup a non-root user
 RUN groupadd --system --gid 999 nonroot \
