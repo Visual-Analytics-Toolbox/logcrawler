@@ -11,5 +11,5 @@ dependencies = [
     "python-snappy>=0.7.3",
     "ruff>=0.14.0",
     "telemetry-parser>=0.3.0",
-    "vaapi>=0.7.28",
+    "vaapi>=0.7.29",
 ]
