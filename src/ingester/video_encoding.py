@@ -1,7 +1,9 @@
-import subprocess
-from pathlib import Path
 from telemetry_parser import Parser as GPMFParser
+from vaapi.client import Vaapi
+from pathlib import Path
+import subprocess
 import json
+import os
 
 
 def get_video_stream_info(file_path):
@@ -15,13 +17,13 @@ def get_video_stream_info(file_path):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         data = json.loads(result.stdout)
-        print(data)
+        print(f"\t{data}")
         return data['streams'][0]
     except (subprocess.CalledProcessError, IndexError, KeyError):
         return None
 
 
-def is_already_reencoded(filepath):
+def gopro_is_already_reencoded(filepath):
     cmd = [
         "ffprobe", "-v", "error", 
         "-select_streams", "v:0", 
@@ -36,9 +38,9 @@ def is_already_reencoded(filepath):
     return encoded
 
 
-def process_video(input_path):
+def process_gopro_video(input_path):
     # Create output path (modify as needed)
-    output_path = video_input.replace("_GoPro", "_GoPro_reencoded")
+    output_path = input_path.replace("_GoPro", "_GoPro_reencoded")
 
     if Path(output_path).exists():
         return
@@ -77,22 +79,40 @@ def process_video(input_path):
         quit()
 
     # TODO test telemetry
-    tele = GPMFParser(output_path).telemetry()
-    print(len(tele))
+    telemetry_data = GPMFParser(output_path).telemetry()
+    print(f"\tnum telemetrie data output: {len(telemetry_data)}")
 
 
-video_list = [
-    "/mnt/d/logs/2025-03-12-GO25/videos/2025-03-13_10-00-00_B-Human_vs_HTWK Robots_half1_Field-A_GoPro.mp4",
-    "/mnt/d/logs/2026-03-10-GO26/2026-03-11_11-50-00_Bit-Bots_vs_Berlin United_half1/videos/2026-03-11_11-50-00_Bit-Bots_vs_Berlin United_half1_Field-C_PiCam.mp4",
-]
+def encode_gopro_videos(log_root_path, client):
+    videos = client.videos.list(type="GoPro")
+    for video in videos:
+        print(video)
+
+        video_path = Path(log_root_path) / video.video_path
+
+        info = get_video_stream_info(video_path)
+        if not info:
+            print(f"Skipping {video_path}: Could not read video info.")
+            continue
+
+        if not info.get('avg_frame_rate') == info.get('r_frame_rate'):
+            print(f"Skipping {video_path}: Framerate is not constant")
+            continue
+
+        encoded = gopro_is_already_reencoded(video_path)
+        if encoded:
+            print(f"Skipping {video_path}: Video is already reencoded")
+            continue
+        
+        telemetry_data = GPMFParser(str(video_path)).telemetry()
+        print(f"\tnum telemetrie data input: {len(telemetry_data)}")
+
+        process_gopro_video(str(video_path))
 
 
-for video_input in video_list:
-    info = get_video_stream_info(video_input)
-    if not info:
-        print(f"Skipping {video_input}: Could not read video info.")
-        continue
-    
-    encoded = is_already_reencoded(video_input)
-    if not encoded:
-        process_video(video_input)
+if __name__ == "__main__":
+    v_client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+    encode_gopro_videos("/mnt/repl", v_client)

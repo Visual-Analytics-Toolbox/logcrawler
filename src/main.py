@@ -18,6 +18,7 @@ from ingester import (
     extract_images,
     input_images,
     run_labelstudio_insert,
+    encode_gopro_videos,
 )
 from utils import check_folder_exists
 import logging
@@ -57,6 +58,7 @@ def main():
     input_cognition_frames(log_root_path, client)
     extract_images(log_root_path, client)
     input_images(log_root_path, client)
+    encode_gopro_videos(log_root_path, client)
     run_labelstudio_insert()
     logging.info("########################################")
     logging.info("################# Done #################")

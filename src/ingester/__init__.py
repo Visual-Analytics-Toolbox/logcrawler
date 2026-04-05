@@ -19,4 +19,5 @@ from .calculate_logstatus_motion import (
 from .input_cognition_frames import input_cognition_frames as input_cognition_frames
 from .extract_images import extract_images as extract_images
 from .input_images import input_images as input_images
+from .video_encoding import encode_gopro_videos as encode_gopro_videos
 from .sync_labelstudio import run_labelstudio_insert as run_labelstudio_insert
