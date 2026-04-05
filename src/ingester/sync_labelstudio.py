@@ -16,6 +16,7 @@ global_label_config = """
       <RectangleLabels name="label" toName="image" showInline="false">
         <Label value="Ball" background="#FFA39E"/>
         <Label value="Nao" background="#D4380D"/>
+        <Label value="Robot" background="#D4380D"/>
         <Label value="Person" background="#FFC069"/>
         <Label value="Referee" background="#AD8B00"/>
         <Label value="Penalty Mark" background="#AD8B00"/>
@@ -34,8 +35,10 @@ global_label_config = """
         <Label value="Own Contour" background="red"/>
         <Label value="Line" background="blue"/>
         <Label value="Nao"/>
+        <Label value="Robot"/>
         <Label value="Field Border" background="green"/>
         <Label value="Person" background="red"/>
+        <Label value="Goalpost" background="#AD8B00" />
       </PolygonLabels>
     </View>
   </View>
@@ -285,7 +288,3 @@ def run_labelstudio_insert():
             project_names = calculate_project_names(log.id, image_list, camera)
             create_project_if_not_exist(client, project_names)
             import_image_tasks_faster(client, v_client, log.id, image_list, camera)
-
-
-if __name__ == "__main__":
-    run_labelstudio_insert()
