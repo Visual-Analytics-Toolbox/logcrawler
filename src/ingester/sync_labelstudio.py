@@ -242,9 +242,9 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
             return_task_ids=True,
         )
 
+    # FIXME that is really slow
     # Patch VAT Image data with link to labelstudio task
     for project_id in relevant_project_ids:
-
         # Fetch tasks for this project (API call outside the main loop)
         all_tasks = list(client.tasks.list(project=project_id, include="data,id"))
 
@@ -265,6 +265,17 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
 
     print("Import complete.")
 
+def is_done(v_client, log_id):
+    image_generator = v_client.image.list(log=log_id, limit=500, labelstudio_url="None")
+    image_list = list(image_generator)
+
+    print("num images without labelstudio url:", len(image_list))
+
+    if len(image_list) > 0:
+        return False
+    
+    return True
+
 def run_labelstudio_insert():
     client = LabelStudio(
         base_url="https://labelstudio-api.berlin-united.com",
@@ -282,6 +293,11 @@ def run_labelstudio_insert():
         if log.id <= 674:
             continue
         print(f"handling log {log.id}")
+
+        if is_done(v_client, log.id):
+            print(f"\t{log.id} is already done")
+            continue
+        
         for camera in ["BOTTOM", "TOP"]:
             image_list = get_images_per_log(v_client, log.id, camera)
             print(f"\tnum images: {len(image_list)}")
