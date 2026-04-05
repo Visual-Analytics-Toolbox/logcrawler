@@ -522,6 +522,7 @@ dependencies = [
     { name = "prometheus-client" },
     { name = "python-snappy" },
     { name = "ruff" },
+    { name = "telemetry-parser" },
     { name = "vaapi" },
 ]
 
@@ -532,7 +533,8 @@ requires-dist = [
     { name = "prometheus-client", specifier = ">=0.23.1" },
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "ruff", specifier = ">=0.14.0" },
-    { name = "vaapi", specifier = ">=0.7.22" },
+    { name = "telemetry-parser", specifier = ">=0.3.0" },
+    { name = "vaapi", specifier = ">=0.7.28" },
 ]
 
 [[package]]
@@ -1390,6 +1392,21 @@ wheels = [
 ]
 
 [[package]]
+name = "telemetry-parser"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/32/dffa40b8a55a5ec0e78da986fb36f866a9e713f5b0048fe5a9dc22273167/telemetry_parser-0.3.0-cp312-cp312-macosx_10_7_x86_64.whl", hash = "sha256:c5b55667c3173ad24e88e6785620c00d5c1c75ed4cfe3b3ba61e157622350e81", size = 1181105, upload-time = "2024-01-16T16:23:03.907Z" },
+    { url = "https://files.pythonhosted.org/packages/16/a7/bb33066cd8c4d858b68caf7c69f23696fec72e1708d6606ab050488e9bb1/telemetry_parser-0.3.0-cp312-cp312-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:e1a86840644d476c475a7fd58b8212328b7f015d2ad182af4eb4a66feb5f00cb", size = 2297114, upload-time = "2024-01-16T16:23:05.529Z" },
+    { url = "https://files.pythonhosted.org/packages/30/b6/486ddac798ecaac741dfa2bfedd2243a034044e2bd1059c35bdba72dbdde/telemetry_parser-0.3.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:91f75b5fdae737fee1664129e204a27d41dac7fd579f413afd1a2e0465cc02a0", size = 1592752, upload-time = "2024-01-16T16:23:07.558Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/0d/c172f62c400e335c7e3d9c1fe4f60aa671eec27eca9e79b9dff29223a555/telemetry_parser-0.3.0-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:525d6815858d78653a3351745089af90d6324072e85a77c615acd6f8b48e2508", size = 1707191, upload-time = "2024-01-16T16:23:09.681Z" },
+    { url = "https://files.pythonhosted.org/packages/61/82/523db96a9a1a04c518355c4779c2761cc85b300fe42b8a74e157e01fb204/telemetry_parser-0.3.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e174b8d0665c343626d402f8ddcc306f9e99770b21bd62f5052be081eb2347d1", size = 1623622, upload-time = "2024-01-16T16:23:12.025Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/b3/1017ec53b9c339abc7e8af1219d0fc13ba02446c5f9c3cb72c88a71b1eb1/telemetry_parser-0.3.0-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:8bbfab378844b2ca5c69e8b29ee855bf85da0d3b3ef5aa4e043f664e9f97ba06", size = 1650456, upload-time = "2024-01-16T16:23:13.958Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/d4/09e0cd1463c514f8abcef106ff0aec43adea6d55282e740d9cf88a89e934/telemetry_parser-0.3.0-cp312-none-win32.whl", hash = "sha256:73f0e71746a116a0653567c9fa2f8191a79473b67fba37ce9e083b40fc05e372", size = 980859, upload-time = "2024-01-16T16:23:15.377Z" },
+    { url = "https://files.pythonhosted.org/packages/53/18/fe19b1fca7db40b597da590faab20ec99c556c50b825fdefe651ff703c77/telemetry_parser-0.3.0-cp312-none-win_amd64.whl", hash = "sha256:94917bb7e63b97f7ea0cefbab9a27e763c5e709b2d40797e31a59dd6e76fdd90", size = 1095620, upload-time = "2024-01-16T16:23:16.851Z" },
+]
+
+[[package]]
 name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1494,7 +1511,7 @@ wheels = [
 
 [[package]]
 name = "vaapi"
-version = "0.7.22"
+version = "0.7.28"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1502,9 +1519,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/80/b9/410a295f5b576182f59ef2385999537940df06195b65002e444480eec2ec/vaapi-0.7.22.tar.gz", hash = "sha256:1c5cef65cd2e00aae8a12a6a61889e55d2e074be32a6d5332c7224641e0b3e9a", size = 40044, upload-time = "2026-02-27T20:20:18.853Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/b5/7130201048b1bcc58d9774cdebf79026959c0540304e915c25bfee386622/vaapi-0.7.28.tar.gz", hash = "sha256:1c7cc428ff2ea95e4032d2d38ff49ac185d1d4cc54334f77f933d46d7abb226f", size = 39053, upload-time = "2026-04-05T10:27:05.143Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5c/49/4e1fa614c4d831a9c08f558fed37c74350b8d86cfc6137b9b465c5d00507/vaapi-0.7.22-py3-none-any.whl", hash = "sha256:7e0ea0ef22624be379a237c08f794ac80d87fde05bf232504c4d877a3b341149", size = 67436, upload-time = "2026-02-27T20:20:17.771Z" },
+    { url = "https://files.pythonhosted.org/packages/34/ab/f7c8e6ce4155ebac2b2b41d6f730a60379776b667464b3867facf3ddcedd/vaapi-0.7.28-py3-none-any.whl", hash = "sha256:ad949f789158ab8ea6d5933fa64724f2891b8b5dd5bbabede8296e1e9348ff4e", size = 63559, upload-time = "2026-04-05T10:27:03.943Z" },
 ]
 
 [[package]]
