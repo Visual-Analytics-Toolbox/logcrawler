@@ -1,65 +1,97 @@
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import numpy as np
 import cv2
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import os
 
+def process_single_image(args):
+    """Worker function to process a single image in a separate process."""
+    img_id, img_url, log_root_path = args
+    image_path = Path(log_root_path) / img_url
+    
+    # Read as grayscale immediately to save time/memory
+    image_cv = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    
+    if image_cv is None:
+        return None, img_url
 
-def variance_of_laplacian(image):
-    # compute the Laplacian of the image and then return the focus
-    # measure, which is simply the variance of the Laplacian
-    return cv2.Laplacian(image, cv2.CV_64F).var()
+    try:
+        brightness_value = np.average(image_cv)
+        # Laplacian variance calculation
+        blurredness_value = cv2.Laplacian(image_cv, cv2.CV_64F).var()
+        
+        return {
+            "id": img_id,
+            "blurredness_value": blurredness_value,
+            "brightness_value": brightness_value,
+        }, None
+    except Exception:
+        return None, img_url
+
+def wait_and_process_futures(futures, update_list, client):
+    """Helper to collect results and trigger bulk updates."""
+    # This waits for at least one task to finish
+    from concurrent.futures import wait, FIRST_COMPLETED
+    done, pending = wait(futures, return_when=FIRST_COMPLETED)
+    
+    for future in done:
+        result, error_url = future.result()
+        if result:
+            update_list.append(result)
+        
+        # Keep the API updates moving in chunks of 100
+        if len(update_list) >= 200:
+            client.image.bulk_update(data=update_list)
+            update_list.clear()
+            print("\tupdated 200 images")
+            
+    return None, pending
 
 
 def calculate_image_stats(log_root_path, client):
-    logs = client.logs.list()
+    logs = sorted(client.logs.list(), key=lambda x: x.id, reverse=True)
+    
+    # Define a max number of images to process at once to avoid memory bloat
+    MAX_WORKERS = os.cpu_count() or 4
+    BUFFER_SIZE = MAX_WORKERS * 2 
 
-    def sort_key_fn(log):
-        return log.id
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        for log in logs:
+            print(f"Processing Log {log.id}")
+            
+            # This is now a generator, not a list
+            images_gen = client.image.list(log=log.id, blurredness_value="None")
+            
+            image_update_data = []
+            futures = set()
 
-    for log in sorted(logs, key=sort_key_fn, reverse=True):
-        print(f"{log.id}: {log.log_path}")
+            # Iterate through the paginated results without casting to list
+            for img in images_gen:
+                # Add a new task to the pool
+                task_args = (img.id, img.image_url, log_root_path)
+                futures.add(executor.submit(process_single_image, task_args))
 
-        images = client.image.list(log=log.id, blurredness_value="None")
+                # If our buffer is full, process what's finished before adding more
+                if len(futures) >= BUFFER_SIZE:
+                    done, futures = wait_and_process_futures(futures, image_update_data, client)
 
-        image_update_data = list()
-        for idx, img in enumerate(images):
-            image_path = Path(log_root_path) / img.image_url
-            image_cv = cv2.imread(image_path, cv2.IMREAD_COLOR)
+            # Clean up remaining futures for this log
+            while futures:
+                done, futures = wait_and_process_futures(futures, image_update_data, client)
+            
+            # Final bulk update for any leftovers in this log
+            if image_update_data:
+                client.image.bulk_update(data=image_update_data)
 
-            try:
-                gray = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
-                brightness_value = np.average(gray)
-                blurredness_value = variance_of_laplacian(gray)
 
-                json_obj = {
-                    "id": img.id,
-                    "blurredness_value": blurredness_value,
-                    "brightness_value": brightness_value,
-                }
 
-                image_update_data.append(json_obj)
 
-            except Exception as e:
-                print(e)
-                print(f"Image broken at {img.image_url} in log: {log.id}")
-                print(
-                    "This problem can occur if the image extraction for this log was aborted"
-                )
-                quit()
+if __name__ == "__main__":
+    from vaapi.client import Vaapi
+    v_client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
 
-            if idx % 100 == 0 and idx != 0:
-                try:
-                    response = client.image.bulk_update(data=image_update_data)
-                    image_update_data.clear()
-                    print(idx)
-                except Exception as e:
-                    print(e)
-                    print("error inputing the data")
-                    quit()
-
-        if len(image_update_data) > 0:
-            try:
-                response = client.image.bulk_update(data=image_update_data)
-            except Exception as e:
-                print(e)
-                print("error inputing the data")
-                quit()
+    calculate_image_stats("/mnt/repl", v_client)
