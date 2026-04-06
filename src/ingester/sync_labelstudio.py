@@ -2,7 +2,6 @@ from label_studio_sdk import LabelStudio
 from vaapi.client import Vaapi
 from collections import defaultdict
 import collections
-import time
 import os
 import re
 
@@ -111,9 +110,9 @@ def calculate_project_names(log_id, image_list, camera):
     return set(project_names)
 
 
-def create_project_if_not_exist(client, project_names):
+def create_project_if_not_exist(client, project_names, log_id):
     print("\tcreate projects if_not_exist")
-    existing_projects = list(client.projects.list(include="title"))
+    existing_projects = list(client.projects.list(include="title", title=str(log_id)))
     existing_project_titles = [p.title for p in existing_projects]
 
     for name in natural_sort(project_names):
@@ -158,7 +157,7 @@ def create_project_if_not_exist(client, project_names):
 def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
     # 1. Pre-calculate all needed project names and their IDs
     print("Pre-fetching project IDs...")
-    existing_projects = list(client.projects.list(include="title,id"))
+    existing_projects = list(client.projects.list(include="title,id", title=str(log_id)))
 
     # Create a mapping from project_name to project_id
     project_map = {}
@@ -248,25 +247,38 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
         # Fetch tasks for this project (API call outside the main loop)
         all_tasks = list(client.tasks.list(project=project_id, include="data,id"))
 
+        image_update_data = list()
         for task_idx, task in enumerate(all_tasks):
             image_id = task.data["markdown_description"].split('/')[-1].rstrip(')')
-            print("task id", task.id)
 
+            json_obj = {
+                "id": int(image_id),
+                "labelstudio_url": f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view_map[project_id].id}&task={task.id}",
+            }
+            image_update_data.append(json_obj)
+
+            if task_idx % 100 == 0 and task_idx != 0:
+                try:
+                    response = v_client.image.bulk_update(data=image_update_data)
+                    image_update_data.clear()
+                    print(task_idx)
+                except Exception as e:
+                    print(e)
+                    print("error inputing the data")
+                    quit()
+
+        if len(image_update_data) > 0:
             try:
-                response = v_client.image.update(
-                    id=int(image_id),
-                    labelstudio_url=f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view_map[project_id].id}&task={task.id}",
-                )
-
+                response = v_client.image.bulk_update(data=image_update_data)
             except Exception as e:
                 print(e)
-                print("error inputing the image_update_data")
+                print("error inputing the data")
                 quit()
 
     print("Import complete.")
 
-def is_done(v_client, log_id):
-    image_generator = v_client.image.list(log=log_id, limit=500, labelstudio_url="None")
+def is_done(v_client, log_id, camera):
+    image_generator = v_client.image.list(log=log_id, camera=camera, limit=500, labelstudio_url="None")
     image_list = list(image_generator)
 
     print("num images without labelstudio url:", len(image_list))
@@ -290,17 +302,17 @@ def run_labelstudio_insert():
     logs = v_client.logs.list()
 
     for log in sorted(logs, key=lambda x: x.id):
-        if log.id <= 674:
-            continue
-        print(f"handling log {log.id}")
-
-        if is_done(v_client, log.id):
-            print(f"\t{log.id} is already done")
-            continue
-        
         for camera in ["BOTTOM", "TOP"]:
+            print(f"handling log {log.id}-{camera}")
+            if is_done(v_client, log.id, camera):
+                print(f"\t{log.id}-{camera} is already done")
+                continue
             image_list = get_images_per_log(v_client, log.id, camera)
             print(f"\tnum images: {len(image_list)}")
             project_names = calculate_project_names(log.id, image_list, camera)
-            create_project_if_not_exist(client, project_names)
+            create_project_if_not_exist(client, project_names, log.id)
             import_image_tasks_faster(client, v_client, log.id, image_list, camera)
+
+
+if __name__ == "__main__":
+    run_labelstudio_insert()
