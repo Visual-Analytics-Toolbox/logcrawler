@@ -58,7 +58,7 @@ def process_gopro_video(input_path):
         "-c:v",
         "libx264",
         "-crf",
-        "23",
+        "20",
         "-c:a",
         "aac",
         "-c:s",
@@ -81,6 +81,40 @@ def process_gopro_video(input_path):
     # TODO test telemetry
     telemetry_data = GPMFParser(output_path).telemetry()
     print(f"\tnum telemetrie data output: {len(telemetry_data)}")
+
+
+def process_picam_video(input_path):
+    # Create output path (modify as needed)
+    output_path = input_path.replace("_PiCam", "_PiCam_reencoded")
+
+    if Path(output_path).exists():
+        return
+    
+    # FFmpeg command
+    cmd = [
+        "ffmpeg",
+        "-i",
+        input_path,
+        "-filter:v",
+        "fps=fps=30",
+        "-c:v",
+        "libx264",
+        "-crf",
+        "23",
+        "-c:a",
+        "copy",
+        "-movflags",
+        "+faststart",
+        output_path,
+    ]
+
+    try:
+        # Run the command
+        subprocess.run(cmd, check=True)
+        print(f"Successfully processed {input_path} to {output_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error processing {input_path}: {e}")
+        quit()
 
 
 def encode_gopro_videos(log_root_path, client):
@@ -110,9 +144,28 @@ def encode_gopro_videos(log_root_path, client):
         process_gopro_video(str(video_path))
 
 
+def encode_picam_videos(log_root_path, client):
+    videos = client.videos.list(type="PiCam")
+    for video in videos:
+        print(video)
+
+        video_path = Path(log_root_path) / video.video_path
+
+        info = get_video_stream_info(video_path)
+        if not info:
+            print(f"Skipping {video_path}: Could not read video info.")
+            continue
+        
+        if info.get('avg_frame_rate') == info.get('r_frame_rate'):
+            print(f"Skipping {video_path}: Framerate is already constant")
+            continue
+
+        process_picam_video(str(video_path))
+
+
 if __name__ == "__main__":
     v_client = Vaapi(
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
-    encode_gopro_videos("/mnt/repl", v_client)
+    encode_picam_videos("/mnt/repl", v_client)

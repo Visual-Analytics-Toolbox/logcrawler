@@ -20,5 +20,6 @@ from .input_cognition_frames import input_cognition_frames as input_cognition_fr
 from .extract_images import extract_images as extract_images
 from .input_images import input_images as input_images
 from .video_encoding import encode_gopro_videos as encode_gopro_videos
+from .video_encoding import encode_picam_videos as encode_picam_videos
 from .calculate_image_stats import calculate_image_stats as calculate_image_stats
 from .sync_labelstudio import run_labelstudio_insert as run_labelstudio_insert
