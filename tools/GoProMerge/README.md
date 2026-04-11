@@ -15,9 +15,3 @@ chmod +x mp4_merge-linux64
 ```
 ./mp4_merge-linux64 input1.mp4 input2.mp4 --out output.mp4
 ```
-
-
-## Use in script
-
-We can use the VAT Database to iterate over all logs and find gopro videos that need merging or we can combine videos based on filenames
-TODO: implement me
