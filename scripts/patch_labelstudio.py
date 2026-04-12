@@ -151,6 +151,29 @@ def patch_ls_webhook(client):
                 ],
             )
 
+def patch_image_url(client):
+    # 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282
+    for log_id in [269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282]:
+        existing_projects = client.projects.list(include="id,title", title=str(log_id))
+        for project in existing_projects:
+
+            # ignore video projects for this config
+            if not project.title.startswith("log"):
+                continue
+            print(f"updating image urls for project {project.id}")
+            all_tasks = list(client.tasks.list(project=project.id, include="data,id"))
+            for task in all_tasks:
+                new_data = task.data.copy()
+                print(new_data["image"])
+
+                if task.data["image"] != new_data["image"].replace("_17-15-00_", "_17-30-00_"):
+                    new_data["image"] = new_data["image"].replace("_17-15-00_", "_17-30-00_")
+                    print(task.id)
+                    client.tasks.update(
+                        id=task.id,
+                        data=new_data,
+                    )
+
 
 if __name__ == "__main__":
     client = LabelStudio(
@@ -158,4 +181,4 @@ if __name__ == "__main__":
         api_key=os.environ.get("LABELSTUDIO_API_KEY"),
     )
     #patch_ls_webhook(client)
-    patch_project_config(client)
+    patch_image_url(client)
