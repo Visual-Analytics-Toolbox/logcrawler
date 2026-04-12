@@ -1,5 +1,4 @@
 from typing import Dict, Mapping
-from datetime import datetime
 from pathlib import Path
 import logging
 import csv
@@ -51,7 +50,6 @@ def input_other_games(log_root_path, client):
                 for row in reader:
                     refs = row["referees"].strip("[]")
                     timestamp_str = f"{row['date']}_{row['time'].replace(':', '-')}-00"
-                    date_object = datetime.strptime(timestamp_str, "%Y-%m-%d_%H-%M-%S")
 
                     if not check_team_name(all_teams, row["team1"]):
                         logging.error(f"team {row['team1']} not found in db")
@@ -72,7 +70,7 @@ def input_other_games(log_root_path, client):
                             team2=all_teams[row["team2"]],
                             half="half1",
                             score=row["score"],
-                            start_time=date_object.isoformat(),
+                            start_time=timestamp_str,
                             referees=refs,
                             is_testgame=False,
                         )
@@ -102,7 +100,7 @@ def input_other_games(log_root_path, client):
                             team2=all_teams[row["team2"]],
                             half="half2",
                             score=row["score"],
-                            start_time=date_object.isoformat(),
+                            start_time=timestamp_str,
                             referees=refs,
                             is_testgame=False,
                         )

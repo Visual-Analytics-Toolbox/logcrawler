@@ -1,8 +1,6 @@
 from typing import Dict, Mapping
-from datetime import datetime
 from pathlib import Path
 import logging
-import sys
 
 
 def get_all_team_names(client) -> Dict[str, int]:
@@ -73,8 +71,6 @@ def input_games(log_root_path, client):
                 logging.error(f"team {team2} not found in db")
                 continue
 
-            date_object = datetime.strptime(timestamp, "%Y-%m-%d_%H-%M-%S")
-
             # TODO check for comments here
             comment = get_game_comment(game)
 
@@ -85,7 +81,7 @@ def input_games(log_root_path, client):
                     team1=all_teams[team1],
                     team2=all_teams[team2],
                     half=halftime,
-                    start_time=date_object.isoformat(),
+                    start_time=timestamp,
                 )
                 logging.debug(f"successfully inserted {game.name} in db")
             except Exception as e:
