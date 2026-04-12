@@ -1,9 +1,10 @@
+from google.protobuf.json_format import MessageToDict
+from naoth.log import Reader as LogReader
+from vaapi.client import Vaapi
+from naoth.log import Parser
 from pathlib import Path
 import logging
-from naoth.log import Reader as LogReader
-from naoth.log import Parser
-from google.protobuf.json_format import MessageToDict
-
+import os
 
 def is_done_motion(log_id: int, status_dict, client):
     new_dict = status_dict.copy()
@@ -95,3 +96,15 @@ def calculate_logstatus_motion(log_root_path, client):
 
         logging.info(f"{log.id}: {sensor_log_path}")
         add_sensorlog_representations(log, sensor_log_path, client, force=False)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+
+    client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+
+    calculate_logstatus_motion("/mnt/repl", client)
