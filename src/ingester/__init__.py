@@ -23,3 +23,4 @@ from .video_encoding import encode_gopro_videos as encode_gopro_videos
 from .video_encoding import encode_picam_videos as encode_picam_videos
 from .calculate_image_stats import calculate_image_stats as calculate_image_stats
 from .sync_labelstudio import run_labelstudio_insert as run_labelstudio_insert
+from .sync_labelstudio_videos import run_labelstudio_insert_videos as run_labelstudio_insert_videos

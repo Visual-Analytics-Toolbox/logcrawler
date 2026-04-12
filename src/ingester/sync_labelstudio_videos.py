@@ -130,9 +130,9 @@ def run_labelstudio_insert_videos():
             videos = v_client.videos.list(game=game.id)
             if len(videos) == 0:
                 continue
-
-            # FIXME choose a video if two are available
-            video = videos[0]
+            
+            # prefer PiCam videos for annotations
+            video = next((v for v in videos if v.type == 'PiCam'), videos[0] if videos else None)
 
             if f"https://logs.berlin-united.com/{video.video_path}" in existing_task_urls.get(project_id, set()):
                 # video already exists in this project's tasks, skip
@@ -141,14 +141,22 @@ def run_labelstudio_insert_videos():
             safe_path = quote(video.video_path)
             task_data = {
                 "video": f"https://logs.berlin-united.com/{video.video_path}",
-                "markdown_description": f"Video: [https://vat.berlin-united.com/api/video/{video.id}](https://vat.berlin-united.com/api/video/{video.id})  \n Raw: [{Path(video.video_path).name}](https://logs.berlin-united.com/{safe_path})",
+                "markdown_description": f"Video: [https://vat.berlin-united.com/api/videos/{video.id}](https://vat.berlin-united.com/api/videos/{video.id})  \n Raw: [{Path(video.video_path).name}](https://logs.berlin-united.com/{safe_path})",
             }
-            resp = client.projects.import_tasks(
+            response = client.projects.import_tasks(
                 id=project_id,
                 request=task_data,
                 return_task_ids=True,
             )
 
+        all_tasks = client.tasks.list(project=project_id, include="data,id")
+        for task in all_tasks:
+            view= client.views.list(project=project_id)[0]
+            video_id = task.data["markdown_description"].split('\n')[0].split('/')[-1].strip().rstrip(')')
+            labelstudio_url = f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}"
+            print(video_id, labelstudio_url)
+
+            response = v_client.videos.update(id=video_id,labelstudio_url=labelstudio_url)
 
 if __name__ == "__main__":
     run_labelstudio_insert_videos()
