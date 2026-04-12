@@ -17,6 +17,7 @@ from .calculate_logstatus_motion import (
     calculate_logstatus_motion as calculate_logstatus_motion,
 )
 from .input_cognition_frames import input_cognition_frames as input_cognition_frames
+from .input_motion_frames import input_motion_frames as input_motion_frames
 from .extract_images import extract_images as extract_images
 from .input_images import input_images as input_images
 from .video_encoding import encode_gopro_videos as encode_gopro_videos

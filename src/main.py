@@ -15,6 +15,7 @@ from ingester import (
     calculate_logstatus_cognition,
     calculate_logstatus_motion,
     input_cognition_frames,
+    input_motion_frames,
     extract_images,
     input_images,
     run_labelstudio_insert,
@@ -59,6 +60,7 @@ def main():
     # create representation json
     # add robot pose + patch representation file (maybe logstatus?)
     input_cognition_frames(log_root_path, client)
+    input_motion_frames(log_root_path, client)
     extract_images(log_root_path, client)
     input_images(log_root_path, client)
     encode_gopro_videos(log_root_path, client)

@@ -1,7 +1,10 @@
 from naoth.log import Reader as LogReader
+from vaapi.client import Vaapi
 from naoth.log import Parser
 from pathlib import Path
 import logging
+import os
+
 
 def input_frames_done(client, log_id):
     # get the log status object for this log
@@ -14,17 +17,17 @@ def input_frames_done(client, log_id):
     except Exception as e:
         print(e)
 
-    # abort if Logstatus reports no Cognition frames for this log
-    if not log_status.FrameInfo or int(log_status.FrameInfo) == 0:
+    # abort if Logstatus reports no Motion frames for this log
+    if not log_status.num_motion_frames or int(log_status.num_motion_frames) == 0:
         print(
-            "\tWARNING: first calculate the number of cognition frames and put it in the db"
+            "\tWARNING: first calculate the number of motion frames and put it in the db"
         )
         quit()
 
-    response = client.cognitionframe.get_frame_count(log=log_id)
-    if int(log_status.FrameInfo) == int(response["count"]):
+    response = client.motionframe.get_frame_count(log=log_id)
+    if int(log_status.num_motion_frames) == int(response["count"]):
         return True
-    elif int(response["count"]) > int(log_status.FrameInfo):
+    elif int(response["count"]) > int(log_status.num_motion_frames):
         # rust based calculation for num frames stops if one broken representation is in the last frame
         print("ERROR: there are more frames in the database than they should be")
         print(
@@ -33,24 +36,24 @@ def input_frames_done(client, log_id):
         quit()
     else:
         print(
-            f"\t number of frames is not correct: {log_status.FrameInfo} != {response['count']}"
+            f"\t number of frames is not correct: {log_status.num_motion_frames} != {response['count']}"
         )
         return False
 
-def input_cognition_frames(log_root_path, client):
-    logging.info("################# Input Cognition Frame Data #################")
+def input_motion_frames(log_root_path, client):
+    logging.info("################# Input Motion Frame Data #################")
     existing_data = client.logs.list()
 
     def sort_key_fn(log):
         return log.id
     
     for log in sorted(existing_data, key=sort_key_fn):
-        log_path = Path(log_root_path) / log.log_path
+        log_path = Path(log_root_path) / log.sensor_log_path
 
         print(f"{log.id}: {log_path}")
 
         if  input_frames_done(client, log.id):
-            print("All Cognition Frames are already in the db")
+            print("All Motion Frames are already in the db")
             continue
 
         my_parser = Parser()
@@ -74,14 +77,25 @@ def input_cognition_frames(log_root_path, client):
             parsed_messages.append(json_obj)
             if idx % 1000 == 0:
                 try:
-                    _ = client.cognitionframe.bulk_create(frame_list=parsed_messages)
+                    _ = client.motionframe.bulk_create(frame_list=parsed_messages)
                     parsed_messages.clear()
                 except Exception as e:
                     print(f"error inputing the data for {log_path}")
                     print(e)
                     quit()
         try:
-            _ = client.cognitionframe.bulk_create(frame_list=parsed_messages)
+            _ = client.motionframe.bulk_create(frame_list=parsed_messages)
         except Exception as e:
             print(e)
             print(f"error inputing the data {log_path}")
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+
+    client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+
+    input_motion_frames("/mnt/repl", client)
