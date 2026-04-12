@@ -51,7 +51,7 @@ def input_cognition_frames(log_root_path, client):
         print(f"{log.id}: {log_path}")
 
         if  input_frames_done(client, log.id):
-            print(f"All Cognition Frames are already in the db")
+            print("All Cognition Frames are already in the db")
             continue
 
         my_parser = Parser()
@@ -63,7 +63,7 @@ def input_cognition_frames(log_root_path, client):
                 frame_number = frame["FrameInfo"].frameNumber
             except Exception as e:
                 logging.warning(
-                    f"FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
+                    "FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
                 )
                 break
             

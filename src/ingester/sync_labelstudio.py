@@ -2,6 +2,7 @@ from label_studio_sdk import LabelStudio
 from vaapi.client import Vaapi
 from collections import defaultdict
 import collections
+import logging
 import os
 import re
 
@@ -27,6 +28,7 @@ global_label_config = """
         <Label value="Center Cross" background="blue" />
         <Label value="Circle Cross" background="blue" />
         <Label value="L Cross" background="blue" />
+        <Label value="Ball" background="#FFA39E"/>
       </KeyPointLabels>
       <Text name="placeholder3" value="placeholder3">Polygon Labels</Text>
       <PolygonLabels name="polygonlabel" toName="image"
@@ -230,7 +232,6 @@ def import_image_tasks_faster(client, v_client, log_id, image_list, camera):
         }
         ls_update_data[project_id].append(task_data)
 
-    print(f"Imported tasks")
     for k, v in ls_update_data.items():
 
         if len(v) == 0:
@@ -289,6 +290,7 @@ def is_done(v_client, log_id, camera):
     return True
 
 def run_labelstudio_insert():
+    logging.info("################# Input Log Data in Labelstudio #################")
     client = LabelStudio(
         base_url="https://labelstudio-api.berlin-united.com",
         api_key=os.environ.get("LABELSTUDIO_API_KEY"),

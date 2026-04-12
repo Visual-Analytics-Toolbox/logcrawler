@@ -22,7 +22,6 @@ def input_videos(log_root_path, client):
 
         game_folder = Path(log_root_path) / game.game_folder
 
-
         video_folder = Path(game_folder) / "videos"
         if not video_folder.exists():
             logging.debug(f"video folder does not exist for {game} - {video_folder}")

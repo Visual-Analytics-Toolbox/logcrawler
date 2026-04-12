@@ -23,6 +23,7 @@ global_label_config = """
         <Label value="Center Cross" background="blue" />
         <Label value="Circle Cross" background="blue" />
         <Label value="L Cross" background="blue" />
+        <Label value="Ball" background="#FFA39E"/>
       </KeyPointLabels>
       <Text name="placeholder3" value="placeholder3">Polygon Labels</Text>
       <PolygonLabels name="polygonlabel" toName="image"
@@ -157,4 +158,4 @@ if __name__ == "__main__":
         api_key=os.environ.get("LABELSTUDIO_API_KEY"),
     )
     #patch_ls_webhook(client)
-    patch_project_config_video(client)
+    patch_project_config(client)

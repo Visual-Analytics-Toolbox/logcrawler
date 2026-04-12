@@ -3,10 +3,11 @@ from collections import defaultdict
 from vaapi.client import Vaapi
 from urllib.parse import quote
 from pathlib import Path
+import logging
 import os
 
 
-global_label_config = """
+global_label_config_video = """
 <View>
   <Markdown value="$markdown_description"/>
   
@@ -85,6 +86,7 @@ def sort_key_fn(data):
     return data.id
 
 def run_labelstudio_insert_videos():
+    logging.info("################# Input Video Data in Labelstudio #################")
     client = LabelStudio(
         base_url="https://labelstudio-api.berlin-united.com",
         api_key=os.environ.get("LABELSTUDIO_API_KEY"),
@@ -107,7 +109,7 @@ def run_labelstudio_insert_videos():
 
         if project_name not in existing_project_titles:
             project = client.projects.create(
-                title=project_name, label_config=global_label_config
+                title=project_name, label_config=global_label_config_video
             )
             client.views.create(project=project.id, data=view_config)
             project_id = project.id
@@ -115,8 +117,6 @@ def run_labelstudio_insert_videos():
             project_id = [p.id for p in existing_projects if p.title == project_name][0]
 
         print("project_id", project_id)
-        if event.id != 10:
-            continue
         
         existing_task_urls = defaultdict(set)
         all_tasks = client.tasks.list(project=project_id, include="data")
@@ -149,4 +149,6 @@ def run_labelstudio_insert_videos():
                 return_task_ids=True,
             )
 
-run_labelstudio_insert_videos()
+
+if __name__ == "__main__":
+    run_labelstudio_insert_videos()

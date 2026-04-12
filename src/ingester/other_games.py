@@ -61,7 +61,7 @@ def input_other_games(log_root_path, client):
                         continue
 
                     if row["team1"] == "Berlin United" or row["team2"] == "Berlin United":
-                        logging.info(f"skipping inserting Berlin United games")
+                        logging.info("skipping inserting Berlin United games")
                         continue
                     
                     # handle half 1
