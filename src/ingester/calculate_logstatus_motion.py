@@ -95,7 +95,7 @@ def calculate_logstatus_motion(log_root_path, client):
         sensor_log_path = Path(log_root_path) / log.sensor_log_path
 
         logging.info(f"{log.id}: {sensor_log_path}")
-        add_sensorlog_representations(log, sensor_log_path, client, force=False)
+        add_sensorlog_representations(log, sensor_log_path, client, force=True)
 
 
 if __name__ == "__main__":
