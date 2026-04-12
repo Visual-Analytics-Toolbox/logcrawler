@@ -51,7 +51,7 @@ def input_videos(log_root_path, client):
             video_type = Path(video_parsed[7]).stem  # removes the .mp4 ending
 
             try:
-                response = client.video.create(
+                response = client.videos.create(
                     game=game.id, video_path=video_path, type=str(video_type)
                 )
             except Exception as e:
@@ -63,7 +63,7 @@ def input_videos(log_root_path, client):
             # TODO add urls with patch here
             comments = get_comments(video_folder)
             try:
-                response = client.video.update(
+                response = client.videos.update(
                     id=response.id,
                     comment=comments,
                 )
