@@ -4,6 +4,18 @@ from vaapi.client import Vaapi
 import logging
 import os
 
+
+def test2(log_root_path, client):
+    logs = client.logs.list(game=96)
+    for log in logs:
+        print(log.id)
+        if log.sensor_log_path != log.sensor_log_path.replace("_17-15-00_", "_17-30-00_"):
+            client.logs.update(id=log.id, sensor_log_path=log.sensor_log_path.replace("_17-15-00_", "_17-30-00_"))
+
+        
+
+
+
 def test(log_root_path, client):
     logs = client.logs.list(game=96)
     for log in logs:
@@ -43,4 +55,4 @@ if __name__ == "__main__":
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
-    test("/mnt/repl", v_client)
+    test2("/mnt/repl", v_client)
