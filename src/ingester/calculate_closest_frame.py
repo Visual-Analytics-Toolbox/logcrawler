@@ -4,6 +4,9 @@ import logging
 import os
 
 
+logger = logging.getLogger(__name__)
+
+
 def is_done(client, log):
     num_cog_frames = client.cognitionframe.list(log=log.id, closest_motion_frame="None")
     num_mot_frames = client.motionframe.list(log=log.id, closest_cognition_frame="None")
@@ -85,10 +88,10 @@ def run_calc(client):
 
     logs = client.logs.list()
     for log in sorted(logs, key=sort_key_fn):
-        logging.info(f"{log.id}: {log.log_path}")
+        logger.info(f"{log.id}: {log.log_path}")
 
         if is_done(client, log):
-            logging.info(f"\tcalculated all closest frames for {log.id} already")
+            logger.info(f"\tcalculated all closest frames for {log.id} already")
             continue
 
         cognition_frames = sorted(list(client.cognitionframe.list(log=log.id)), key=sort_frames)

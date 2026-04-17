@@ -1,9 +1,13 @@
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 import numpy as np
+import logging
 import cv2
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import os
+
+
+logger = logging.getLogger(__name__)
+
 
 def process_single_image(args):
     """Worker function to process a single image in a separate process."""

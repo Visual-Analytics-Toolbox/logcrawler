@@ -5,14 +5,16 @@ see: https://scm.cms.hu-berlin.de/berlinunited/naoth-2020/-/commit/0a79c8c2ae114
 # TODO: we have stuff like this: /vol/repl261-vol4/naoth/logs/2023-08-cccamp/2023-08-18-testgame_04/2_22_Nao0004_230818-1213
 were we only have an image log and no game.log
 """
-
-from pathlib import Path
-from naoth.log import Reader as LogReader
 from naoth.pb.Framework_Representations_pb2 import Image
+from naoth.log import Reader as LogReader
 from naoth.log import Parser
+from pathlib import Path
 from os import stat
-import os
 import logging
+import os
+
+
+logger = logging.getLogger(__name__)
 
 
 def sort_key_fn(data):

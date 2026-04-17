@@ -17,5 +17,7 @@ if __name__ == "__main__":
     )
     #test("/mnt/repl", v_client)
     logs = list(v_client.logs.list())
+    games = list(v_client.games.list())
 
     print(has_duplicates(logs, "log_path"))  # Output: True
+    print(has_duplicates(games, "2025-03-15_17-15-00"))  # Output: True

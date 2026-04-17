@@ -1,8 +1,11 @@
-from pathlib import Path
-import logging
+from google.protobuf.json_format import MessageToDict
 from naoth.log import Reader as LogReader
 from naoth.log import Parser
-from google.protobuf.json_format import MessageToDict
+from pathlib import Path
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def is_done(log_id: int, status_dict, client):

@@ -1,6 +1,8 @@
 from pathlib import Path
 import logging
-import sys
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_robot_version(head_number: str) -> str:

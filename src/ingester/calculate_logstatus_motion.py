@@ -6,6 +6,10 @@ from pathlib import Path
 import logging
 import os
 
+
+logger = logging.getLogger(__name__)
+
+
 def is_done_motion(log_id: int, status_dict, client):
     new_dict = status_dict.copy()
     try:
@@ -95,7 +99,7 @@ def calculate_logstatus_motion(log_root_path, client):
         sensor_log_path = Path(log_root_path) / log.sensor_log_path
 
         logging.info(f"{log.id}: {sensor_log_path}")
-        add_sensorlog_representations(log, sensor_log_path, client, force=True)
+        add_sensorlog_representations(log, sensor_log_path, client, force=False)
 
 
 if __name__ == "__main__":

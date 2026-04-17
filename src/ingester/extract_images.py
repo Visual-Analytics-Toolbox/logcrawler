@@ -1,15 +1,18 @@
-import queue
-import os
 from naoth.log import Reader as LogReader
+from PIL import Image as PIL_Image
+from PIL import PngImagePlugin
 from naoth.log import Parser
 from pathlib import Path
 import concurrent.futures
 import subprocess
 import numpy as np
+import logging
+import queue
 import io
-from PIL import PngImagePlugin
-from PIL import Image as PIL_Image
+import os
 
+
+logger = logging.getLogger(__name__)
 
 
 def is_done(client, log_root_path, log):

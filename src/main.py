@@ -1,6 +1,5 @@
 from vaapi.client import Vaapi
-from prometheus_client import push_to_gateway
-from utils import check_env_vars, registry
+from utils import check_env_vars
 from ingester import (
     input_events,
     input_lab_events,
@@ -40,7 +39,6 @@ def main():
         logging.getLogger().error(f"Log Path at {log_root_path} is not accessible")
 
     # TODO maybe build a class LogCrawler and all the functions are member functions and the clients and prometheus config objects are also members
-    # TODO catch errors here
     client = Vaapi(
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
@@ -50,8 +48,10 @@ def main():
     input_games(log_root_path, client)
     input_other_games(log_root_path, client)
     input_lab_experiments(log_root_path, client)
+    
     input_videos(log_root_path, client)
     input_logs(log_root_path, client)
+
     input_experiment_gamelogs(log_root_path, client)
     combine_logs(log_root_path, client)
     export_representation(log_root_path, client)
@@ -71,11 +71,6 @@ def main():
     logging.info("########################################")
     logging.info("################# Done #################")
     logging.info("########################################")
-    push_to_gateway(
-        "http://monitoring-prometheus-pushgateway.monitoring.svc.cluster.local:9091",
-        job="logcrawler",
-        registry=registry,
-    )
 
 
 if __name__ == "__main__":

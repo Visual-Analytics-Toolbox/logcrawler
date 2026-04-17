@@ -4,6 +4,9 @@ import logging
 import csv
 
 
+logger = logging.getLogger(__name__)
+
+
 def get_all_team_names(client) -> Dict[str, int]:
     """
     Get a list of team names from the db
