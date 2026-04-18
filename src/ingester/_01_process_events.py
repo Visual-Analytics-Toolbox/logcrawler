@@ -44,7 +44,7 @@ def input_events(log_root_path, client):
 
 
 def input_lab_events(log_root_path, client):
-    logger.info("################# Input Lab Experiments #################")
+    logging.info("################# Input Lab Experiments #################")
     all_events = [f for f in Path(log_root_path).iterdir() if f.is_dir()]
     for event in sorted(all_events):
         if event.name in lab_experiments:

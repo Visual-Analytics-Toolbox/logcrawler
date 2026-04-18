@@ -24,7 +24,8 @@ def sort_key_fn(data):
     return data.id
 
 
-def input_experiments(log_root_path, client):
+def input_event_experiments(log_root_path, client):
+    logging.info("################# Input Event Experiments #################")
     events = client.events.list()
     for event in events:
         ev = Path(log_root_path) / event.event_folder
@@ -38,7 +39,7 @@ def input_experiments(log_root_path, client):
 
 
 def input_lab_experiments(log_root_path, client):
-    logging.info("################# Input Experiment Data #################")
+    logging.info("################# Input Lab Experiments #################")
     events = client.events.list()
     for event in sorted(events, key=sort_key_fn):
         ev = Path(log_root_path) / event.event_folder

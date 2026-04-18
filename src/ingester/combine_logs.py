@@ -215,56 +215,52 @@ def calculate_first_image(logpath):
         return False
 
 
-def combine_logs(log_root_path, client, force=False):
-    logging.info("################# Combine Logs #################")
-    # TODO add heinrichs pose representation here if it does not exist
-    logs = client.logs.list()
-    for data in sorted(logs, key=sort_key_fn):
-        log_folder_path = (
-            Path(log_root_path) / Path(data.log_path).parent
-        )  # data.log_path is path to file
-        logging.warning(f"log_folder_path: {str(log_folder_path)}")
+def combine_logs(log_root_path, client, log, force=False):
+    logging.info("\t\tCombine Logs")
+    log_folder_path = (
+        Path(log_root_path) / Path(log.log_path).parent
+    )  # data.log_path is path to file
 
-        combined_log_path = log_folder_path / "combined.log"
-        gamelog_path = log_folder_path / "game.log"
-        img_log_path = log_folder_path / "images.log"
-        img_jpeg_log_path = log_folder_path / "images_jpeg.log"
+    combined_log_path = log_folder_path / "combined.log"
+    gamelog_path = log_folder_path / "game.log"
+    img_log_path = log_folder_path / "images.log"
+    img_jpeg_log_path = log_folder_path / "images_jpeg.log"
 
-        has_game_log = (
-            Path(gamelog_path).is_file() and stat(str(gamelog_path)).st_size > 0
-        )
-        has_image_log = (
-            Path(img_log_path).is_file() and stat(str(img_log_path)).st_size > 0
-        )
-        has_image_jpeg_log = (
-            Path(img_jpeg_log_path).is_file()
-            and stat(str(img_jpeg_log_path)).st_size > 0
-        )
+    has_game_log = (
+        Path(gamelog_path).is_file() and stat(str(gamelog_path)).st_size > 0
+    )
+    has_image_log = (
+        Path(img_log_path).is_file() and stat(str(img_log_path)).st_size > 0
+    )
+    has_image_jpeg_log = (
+        Path(img_jpeg_log_path).is_file()
+        and stat(str(img_jpeg_log_path)).st_size > 0
+    )
 
-        if not has_game_log and (has_image_log or has_image_jpeg_log):
-            logging.warning(
-                f"{str(log_folder_path)}\n\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
+    if not has_game_log and (has_image_log or has_image_jpeg_log):
+        logging.debug(
+            f"{str(log_folder_path)}\n\tcan't combine anything here, missing game.log or image.log/image_jpeg.log"
+        )
+        return
+
+    if not combined_log_path.is_file() or force:
+        if has_image_log and has_image_jpeg_log:
+            write_combined_log(
+                log_folder_path,
+                combined_log_path,
+                img_log_path,
+                gamelog_path,
+                img_jpeg_log_path,
             )
-            continue
-
-        if not combined_log_path.is_file() or force:
-            if has_image_log and has_image_jpeg_log:
-                write_combined_log(
-                    log_folder_path,
-                    combined_log_path,
-                    img_log_path,
-                    gamelog_path,
-                    img_jpeg_log_path,
-                )
-            elif has_image_log and not has_image_jpeg_log:
-                write_combined_log(
-                    log_folder_path, combined_log_path, img_log_path, gamelog_path
-                )
-            elif has_image_jpeg_log and not has_image_log:
-                write_combined_log_jpeg(
-                    combined_log_path, img_jpeg_log_path, gamelog_path
-                )
-            else:
-                # not an error: /vol/repl261-vol4/naoth/logs/2024-04-17_GO24/2024-04-19_21-00-00_Berlin United_vs_Nao Devils_half1-test/game_logs/7_16_Nao0017_240419-1937
-                # raise ValueError("We shouldn't have gotten this far, either image.log or image_jpeg.log should exist")
-                logging.debug("WARNING: nothing to combine found here")
+        elif has_image_log and not has_image_jpeg_log:
+            write_combined_log(
+                log_folder_path, combined_log_path, img_log_path, gamelog_path
+            )
+        elif has_image_jpeg_log and not has_image_log:
+            write_combined_log_jpeg(
+                combined_log_path, img_jpeg_log_path, gamelog_path
+            )
+        else:
+            # not an error: /vol/repl261-vol4/naoth/logs/2024-04-17_GO24/2024-04-19_21-00-00_Berlin United_vs_Nao Devils_half1-test/game_logs/7_16_Nao0017_240419-1937
+            # raise ValueError("We shouldn't have gotten this far, either image.log or image_jpeg.log should exist")
+            logging.debug("WARNING: nothing to combine found here")

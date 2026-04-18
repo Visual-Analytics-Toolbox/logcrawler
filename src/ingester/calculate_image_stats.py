@@ -53,40 +53,36 @@ def wait_and_process_futures(futures, update_list, client):
     return None, pending
 
 
-def calculate_image_stats(log_root_path, client):
-    logs = sorted(client.logs.list(), key=lambda x: x.id, reverse=True)
-    
+def calculate_image_stats(log_root_path, client, log):
+    logging.info("\t\tCalculate Image Stats")
     # Define a max number of images to process at once to avoid memory bloat
     MAX_WORKERS = os.cpu_count() or 4
     BUFFER_SIZE = MAX_WORKERS * 2 
 
     with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        for log in logs:
-            print(f"Processing Log {log.id}")
-            
-            # This is now a generator, not a list
-            images_gen = client.image.list(log=log.id, blurredness_value="None")
-            
-            image_update_data = []
-            futures = set()
+        # This is now a generator, not a list
+        images_gen = client.image.list(log=log.id, blurredness_value="None")
+        
+        image_update_data = []
+        futures = set()
 
-            # Iterate through the paginated results without casting to list
-            for img in images_gen:
-                # Add a new task to the pool
-                task_args = (img.id, img.image_url, log_root_path)
-                futures.add(executor.submit(process_single_image, task_args))
+        # Iterate through the paginated results without casting to list
+        for img in images_gen:
+            # Add a new task to the pool
+            task_args = (img.id, img.image_url, log_root_path)
+            futures.add(executor.submit(process_single_image, task_args))
 
-                # If our buffer is full, process what's finished before adding more
-                if len(futures) >= BUFFER_SIZE:
-                    done, futures = wait_and_process_futures(futures, image_update_data, client)
-
-            # Clean up remaining futures for this log
-            while futures:
+            # If our buffer is full, process what's finished before adding more
+            if len(futures) >= BUFFER_SIZE:
                 done, futures = wait_and_process_futures(futures, image_update_data, client)
-            
-            # Final bulk update for any leftovers in this log
-            if image_update_data:
-                client.image.bulk_update(data=image_update_data)
+
+        # Clean up remaining futures for this log
+        while futures:
+            done, futures = wait_and_process_futures(futures, image_update_data, client)
+        
+        # Final bulk update for any leftovers in this log
+        if image_update_data:
+            client.image.bulk_update(data=image_update_data)
 
 
 

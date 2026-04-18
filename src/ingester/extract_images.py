@@ -312,95 +312,89 @@ def worker(data_queue):
         except queue.Empty:
             continue
 
-def extract_images(log_root_path, client):
-    existing_data = client.logs.list()
 
-    def sort_key_fn(log):
-        return log.id
+def extract_images(log_root_path, client, log):
+    logging.info("\t\tExtract Images")
 
-    for log in sorted(existing_data, key=sort_key_fn):
-        log_path = Path(log_root_path) / Path(log.combined_log_path)
+    log_path = Path(log_root_path) / Path(log.combined_log_path)
+    if log_path is None or not log_path.exists():
+        logger.warning("\tcouldnt find a valid log file")
+        return
 
-        print(f"{log.id}: {log.combined_log_path}")
+    if is_done(client, log_root_path, log):
+        return
 
-        if log_path is None or not log_path.exists():
-            print("\tcouldnt find a valid log file")
-            continue
+    data_queue = queue.Queue()
+    # define different extract folders for games and experiments
+    if not log.game:
+        extracted_folder = str(log_path.parent / "extracted")
+    else:
+        extracted_folder = str(log_path.parent).replace("game_logs", "extracted")
 
-        if is_done(client, log_root_path, log):
-            continue
+    out_top = extracted_folder / Path("log_top")
+    out_bottom = extracted_folder / Path("log_bottom")
+    out_top_jpg = extracted_folder / Path("log_top_jpg")
+    out_bottom_jpg = extracted_folder / Path("log_bottom_jpg")
+    out_top.mkdir(exist_ok=True, parents=True)
+    out_bottom.mkdir(exist_ok=True, parents=True)
+    out_top_jpg.mkdir(exist_ok=True, parents=True)
+    out_bottom_jpg.mkdir(exist_ok=True, parents=True)
 
-        data_queue = queue.Queue()
-        # define different extract folders for games and experiments
-        if not log.game:
-            extracted_folder = str(log_path.parent / "extracted")
-        else:
-            extracted_folder = str(log_path.parent).replace("game_logs", "extracted")
+    num_threads = os.cpu_count() * 2
+    batch_size = 50  # Adjust based on your specific use case
 
-        out_top = extracted_folder / Path("log_top")
-        out_bottom = extracted_folder / Path("log_bottom")
-        out_top_jpg = extracted_folder / Path("log_top_jpg")
-        out_bottom_jpg = extracted_folder / Path("log_bottom_jpg")
-        out_top.mkdir(exist_ok=True, parents=True)
-        out_bottom.mkdir(exist_ok=True, parents=True)
-        out_top_jpg.mkdir(exist_ok=True, parents=True)
-        out_bottom_jpg.mkdir(exist_ok=True, parents=True)
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=num_threads
+    ) as executor:
+        # Start worker threads
+        futures = [
+            executor.submit(worker, data_queue) for _ in range(num_threads)
+        ]
 
-        num_threads = os.cpu_count() * 2
-        batch_size = 50  # Adjust based on your specific use case
+        my_parser = Parser()
+        my_parser.register("ImageJPEG", "Image")
+        my_parser.register("ImageJPEGTop", "Image")
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=num_threads
-        ) as executor:
-            # Start worker threads
-            futures = [
-                executor.submit(worker, data_queue) for _ in range(num_threads)
-            ]
+        with LogReader(log_path, my_parser) as reader:
+            batch = []
+            for frame in reader.read():
+                try:
+                    frame_number = frame["FrameInfo"].frameNumber
+                    frame_time = frame["FrameInfo"].time
+                except Exception as e:
+                    print(e)
+                    print(
+                        "FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
+                    )
+                    # print(len(frame_array))
+                    # print(f"last frame number was {frame_array[-1]}") # FIXME does not work if its the first frame or every 100th
+                    break
+                image = get_images(frame)
 
-            my_parser = Parser()
-            my_parser.register("ImageJPEG", "Image")
-            my_parser.register("ImageJPEGTop", "Image")
-
-            with LogReader(log_path, my_parser) as reader:
-                batch = []
-                for frame in reader.read():
-                    try:
-                        frame_number = frame["FrameInfo"].frameNumber
-                        frame_time = frame["FrameInfo"].time
-                    except Exception as e:
-                        print(e)
-                        print(
-                            "FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
-                        )
-                        # print(len(frame_array))
-                        # print(f"last frame number was {frame_array[-1]}") # FIXME does not work if its the first frame or every 100th
-                        break
-                    image = get_images(frame)
-
-                    # Note: its important that this is a tuple
-                    batch.append((image, log, out_bottom, out_bottom_jpg, out_top, out_top_jpg))
-                    if len(batch) >= batch_size:
-                        data_queue.put(batch)
-                        batch = []
-                if batch:  # Put any remaining items
+                # Note: its important that this is a tuple
+                batch.append((image, log, out_bottom, out_bottom_jpg, out_top, out_top_jpg))
+                if len(batch) >= batch_size:
                     data_queue.put(batch)
+                    batch = []
+            if batch:  # Put any remaining items
+                data_queue.put(batch)
 
-            # Wait for all tasks to be completed
-            data_queue.join()
+        # Wait for all tasks to be completed
+        data_queue.join()
 
-            # Signal worker threads to exit
-            for _ in range(num_threads):
-                data_queue.put(None)
+        # Signal worker threads to exit
+        for _ in range(num_threads):
+            data_queue.put(None)
 
-            # Wait for all threads to complete
-            concurrent.futures.wait(futures)
+        # Wait for all threads to complete
+        concurrent.futures.wait(futures)
 
-        # HACK delete image folders if they are empty - this is just so that looking at the distracted folder is not confusing for humans
-        if not any(out_top_jpg.iterdir()):
-            out_top_jpg.rmdir()
-        if not any(out_bottom_jpg.iterdir()):
-            out_bottom_jpg.rmdir()
-        if not any(out_top.iterdir()):
-            out_top.rmdir()
-        if not any(out_bottom.iterdir()):
-            out_bottom.rmdir()
+    # HACK delete image folders if they are empty - this is just so that looking at the distracted folder is not confusing for humans
+    if not any(out_top_jpg.iterdir()):
+        out_top_jpg.rmdir()
+    if not any(out_bottom_jpg.iterdir()):
+        out_bottom_jpg.rmdir()
+    if not any(out_top.iterdir()):
+        out_top.rmdir()
+    if not any(out_bottom.iterdir()):
+        out_bottom.rmdir()

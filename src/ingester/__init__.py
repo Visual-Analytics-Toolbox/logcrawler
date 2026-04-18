@@ -1,27 +1,16 @@
-from .handle_events import input_events as input_events
-from .handle_events import input_lab_events as input_lab_events
-from .handle_games import input_games as input_games
-from .other_games import input_other_games as input_other_games
-from .handle_experiments import input_experiments as input_experiments
-from .handle_experiments import input_lab_experiments as input_lab_experiments
-from .handle_other_video_data import input_other_video_data as input_other_video_data
-from .handle_video_data import input_videos as input_videos
-from .handle_logs import input_logs as input_logs
-from .handle_logs import input_experiment_gamelogs as input_experiment_gamelogs
-from .combine_logs import combine_logs as combine_logs
-from .representation_exporter import export_representation as export_representation
-from .calculate_logstatus_cognition import (
-    calculate_logstatus_cognition as calculate_logstatus_cognition,
-)
-from .calculate_logstatus_motion import (
-    calculate_logstatus_motion as calculate_logstatus_motion,
-)
-from .input_cognition_frames import input_cognition_frames as input_cognition_frames
-from .input_motion_frames import input_motion_frames as input_motion_frames
-from .extract_images import extract_images as extract_images
-from .input_images import input_images as input_images
-from .video_encoding import encode_gopro_videos as encode_gopro_videos
-from .video_encoding import encode_picam_videos as encode_picam_videos
-from .calculate_image_stats import calculate_image_stats as calculate_image_stats
-from .sync_labelstudio import run_labelstudio_insert as run_labelstudio_insert
+# handle meta data import
+from ._01_process_events import input_events as input_events, input_lab_events as input_lab_events
+from ._02_process_games import input_games as input_games, input_other_games as input_other_games
+from ._03_process_experiments import input_lab_experiments as input_lab_experiments, input_event_experiments as input_event_experiments
+from ._04_process_videos import input_videos as input_videos, input_other_video_data as input_other_video_data
+from ._05_process_logs import input_logs as input_logs, input_experiment_gamelogs as input_experiment_gamelogs
+
+# handles log specific preprocessing and data import
+from ._06_process_logdata import process_log_data as process_log_data
+
+# 
+from ._07_encode_video_data import encode_gopro_videos as encode_gopro_videos
+from ._07_encode_video_data import encode_picam_videos as encode_picam_videos
+
+
 from .sync_labelstudio_videos import run_labelstudio_insert_videos as run_labelstudio_insert_videos

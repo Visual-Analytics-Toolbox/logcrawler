@@ -1,7 +1,11 @@
-from pathlib import Path
 from typing import Generator, List
+from pathlib import Path
 from time import sleep
+import logging
 import os
+
+
+logger = logging.getLogger(__name__)
 
 
 def scandir_yield_files(directory):
@@ -27,7 +31,7 @@ def path_generator(
 
 
 def handle_insertion(client, log_root_path, individual_extracted_folder, log, camera, image_type):
-    print(f"\tadding images from {individual_extracted_folder} to db")
+    logger.debug(f"\tadding images from {individual_extracted_folder} to db")
 
     # return silently if the folder does not exist or the argument is not a folder
     # this could be the case for the raw image folder if now raw images exist in the logs and therefore were not extracted
@@ -89,7 +93,7 @@ def is_done(client, log_id, camera, image_type):
 
     response2 = client.log_status.list(log=log_id)
     if len(response2) == 0:
-        print("\tno log_status found")
+        logger.error("\tno log_status found")
         return False
     log_status = response2[0]
 
@@ -105,37 +109,32 @@ def is_done(client, log_id, camera, image_type):
         raise ValueError()
 
     if target_count == db_count:
-        print("\t\tall images are already inserted")
+        logger.debug("\t\tall images are already inserted")
         return True
-    print(f"\t\tmissing {target_count} images in the db")
+    logger.warning(f"\t\tmissing {target_count} images in the db")
     return False
 
 
-def input_images(log_root_path, client):
-    existing_data = client.logs.list()
+def input_images(log_root_path, client, log):
+    logging.info("\t\tInput Images")
 
-    def myfunc(log):
-        return log.id
+    log_path = Path(log_root_path) / log.log_path
+
+    # TODO could we just switch game_logs with extracted in the paths?
+    # FIXME handle experiments here
+    robot_foldername = log_path.parent.name
     
-    for log in sorted(existing_data, key=myfunc):
-        print(f"{log.id}: {log.log_path}")
-        log_path = Path(log_root_path) / log.log_path
+    if not log.game:
+        extracted_path = log_path.parent / "extracted"
+    else:
+        extracted_path = log_path.parent.parent.parent / "extracted" / robot_foldername
+    
+    bottom_path = extracted_path / "log_bottom"
+    top_path = extracted_path / "log_top"
+    bottom_path_jpg = extracted_path / "log_bottom_jpg"
+    top_path_jpg = extracted_path / "log_top_jpg"
 
-        # TODO could we just switch game_logs with extracted in the paths?
-        # FIXME handle experiments here
-        robot_foldername = log_path.parent.name
-        
-        if not log.game:
-            extracted_path = log_path.parent / "extracted"
-        else:
-            extracted_path = log_path.parent.parent.parent / "extracted" / robot_foldername
-        
-        bottom_path = extracted_path / "log_bottom"
-        top_path = extracted_path / "log_top"
-        bottom_path_jpg = extracted_path / "log_bottom_jpg"
-        top_path_jpg = extracted_path / "log_top_jpg"
-
-        handle_insertion(client, log_root_path, bottom_path, log, camera="BOTTOM", image_type="RAW")
-        handle_insertion(client, log_root_path, top_path, log, camera="TOP", image_type="RAW")
-        handle_insertion(client, log_root_path, bottom_path_jpg, log, camera="BOTTOM", image_type="JPEG")
-        handle_insertion(client, log_root_path, top_path_jpg, log, camera="TOP", image_type="JPEG")
+    handle_insertion(client, log_root_path, bottom_path, log, camera="BOTTOM", image_type="RAW")
+    handle_insertion(client, log_root_path, top_path, log, camera="TOP", image_type="RAW")
+    handle_insertion(client, log_root_path, bottom_path_jpg, log, camera="BOTTOM", image_type="JPEG")
+    handle_insertion(client, log_root_path, top_path_jpg, log, camera="TOP", image_type="JPEG")

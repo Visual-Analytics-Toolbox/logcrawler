@@ -78,49 +78,43 @@ def update_motion_frames(client, result_mot):
                 quit()
 
 
-def run_calc(client):
-    logging.info("################# Calculate Closest Frames #################")
-    def sort_key_fn(log):
-        return log.id
-    
+def calculate_closest_frames(client, log):
+    logging.info("\t\tCalculate Closest Frames")
+
     def sort_frames(frame):
         return frame.frame_time
 
-    logs = client.logs.list()
-    for log in sorted(logs, key=sort_key_fn):
-        logger.info(f"{log.id}: {log.log_path}")
+    if is_done(client, log):
+        logger.debug(f"\tcalculated all closest frames for {log.id} already")
+        return
 
-        if is_done(client, log):
-            logger.info(f"\tcalculated all closest frames for {log.id} already")
-            continue
+    cognition_frames = sorted(list(client.cognitionframe.list(log=log.id)), key=sort_frames)
+    motion_frames = sorted(list(client.motionframe.list(log=log.id)), key=sort_frames)
 
-        cognition_frames = sorted(list(client.cognitionframe.list(log=log.id)), key=sort_frames)
-        motion_frames = sorted(list(client.motionframe.list(log=log.id)), key=sort_frames)
+    clean_cog_list = [dict(frame) for frame in cognition_frames]
+    clean_mot_list = [dict(frame) for frame in motion_frames]
 
-        clean_cog_list = [dict(frame) for frame in cognition_frames]
-        clean_mot_list = [dict(frame) for frame in motion_frames]
+    df_cog = pd.DataFrame(clean_cog_list)
+    df_mot = pd.DataFrame(clean_mot_list)
 
-        df_cog = pd.DataFrame(clean_cog_list)
-        df_mot = pd.DataFrame(clean_mot_list)
+    result_cog = pd.merge_asof(
+        df_cog, 
+        df_mot[['id', 'frame_time']], 
+        on='frame_time', 
+        direction='nearest', 
+        suffixes=('', '_motion')
+    )
+    
+    result_mot = pd.merge_asof(
+        df_mot, 
+        df_cog[['id', 'frame_time']], 
+        on='frame_time', 
+        direction='nearest', 
+        suffixes=('', '_cognition')
+    )
 
-        result_cog = pd.merge_asof(
-            df_cog, 
-            df_mot[['id', 'frame_time']], 
-            on='frame_time', 
-            direction='nearest', 
-            suffixes=('', '_motion')
-        )
-        
-        result_mot = pd.merge_asof(
-            df_mot, 
-            df_cog[['id', 'frame_time']], 
-            on='frame_time', 
-            direction='nearest', 
-            suffixes=('', '_cognition')
-        )
-
-        update_cognition_frames(client, result_cog)
-        update_motion_frames(client, result_mot)
+    update_cognition_frames(client, result_cog)
+    update_motion_frames(client, result_mot)
 
 
 if __name__ == "__main__":
@@ -132,4 +126,4 @@ if __name__ == "__main__":
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
 
-    run_calc(client)
+    calculate_closest_frames(client)

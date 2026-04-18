@@ -1,31 +1,22 @@
-from vaapi.client import Vaapi
+from label_studio_sdk import LabelStudio
+from utils import check_folder_exists
 from utils import check_env_vars
+from vaapi.client import Vaapi
+import logging
+import os
+
 from ingester import (
     input_events,
     input_lab_events,
-    input_lab_experiments,
     input_games,
     input_other_games,
+    input_lab_experiments,
     input_videos,
+    input_other_video_data,
     input_logs,
-    combine_logs,
-    export_representation,
     input_experiment_gamelogs,
-    calculate_logstatus_cognition,
-    calculate_logstatus_motion,
-    input_cognition_frames,
-    input_motion_frames,
-    extract_images,
-    input_images,
-    run_labelstudio_insert,
-    run_labelstudio_insert_videos,
-    encode_gopro_videos,
-    encode_picam_videos,
-    calculate_image_stats,
+    process_log_data,
 )
-from utils import check_folder_exists
-import logging
-import os
 
 
 def main():
@@ -39,35 +30,32 @@ def main():
         logging.getLogger().error(f"Log Path at {log_root_path} is not accessible")
 
     # TODO maybe build a class LogCrawler and all the functions are member functions and the clients and prometheus config objects are also members
-    client = Vaapi(
+    v_client = Vaapi(
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
-    input_events(log_root_path, client)
-    input_lab_events(log_root_path, client)
-    input_games(log_root_path, client)
-    input_other_games(log_root_path, client)
-    input_lab_experiments(log_root_path, client)
-    
-    input_videos(log_root_path, client)
-    input_logs(log_root_path, client)
 
-    input_experiment_gamelogs(log_root_path, client)
-    combine_logs(log_root_path, client)
-    export_representation(log_root_path, client)
-    calculate_logstatus_cognition(log_root_path, client)
-    calculate_logstatus_motion(log_root_path, client)
-    # create representation json
-    # add robot pose + patch representation file (maybe logstatus?)
-    input_cognition_frames(log_root_path, client)
-    input_motion_frames(log_root_path, client)
-    extract_images(log_root_path, client)
-    input_images(log_root_path, client)
-    encode_gopro_videos(log_root_path, client)
-    encode_picam_videos(log_root_path, client)
-    calculate_image_stats(log_root_path, client)
-    run_labelstudio_insert()
-    run_labelstudio_insert_videos()
+    l_client = LabelStudio(
+        base_url="https://labelstudio-api.berlin-united.com",
+        api_key=os.environ.get("LABELSTUDIO_API_KEY"),
+    )
+    # 01
+    input_events(log_root_path, v_client)
+    input_lab_events(log_root_path, v_client)
+    # 02
+    input_games(log_root_path, v_client)
+    input_other_games(log_root_path, v_client)
+    # 03
+    input_lab_experiments(log_root_path, v_client)
+    # 04
+    input_videos(log_root_path, v_client)
+    input_other_video_data(log_root_path, v_client)
+    # 05
+    input_logs(log_root_path, v_client)
+    input_experiment_gamelogs(log_root_path, v_client)
+
+    # 06 handle log data
+    process_log_data(log_root_path, v_client, l_client)
     logging.info("########################################")
     logging.info("################# Done #################")
     logging.info("########################################")

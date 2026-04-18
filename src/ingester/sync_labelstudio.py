@@ -6,6 +6,10 @@ import logging
 import os
 import re
 
+
+logger = logging.getLogger(__name__)
+
+
 global_label_config = """
 <View>
   <Markdown value="$markdown_description"/>
@@ -103,7 +107,7 @@ def get_images_per_log(v_client, log_id, camera):
 
 
 def calculate_project_names(log_id, image_list, camera):
-    print("\tcalculating project names")
+    logger.debug("\tcalculating project names")
     project_names = list()
     for idx, image in enumerate(image_list):
         project_name = f"log-{log_id}_part-{idx // 1000}_{camera.lower()}"
@@ -282,38 +286,25 @@ def is_done(v_client, log_id, camera):
     image_generator = v_client.image.list(log=log_id, camera=camera, limit=500, labelstudio_url="None")
     image_list = list(image_generator)
 
-    print("num images without labelstudio url:", len(image_list))
+    logger.debug("num images without labelstudio url:", len(image_list))
 
     if len(image_list) > 0:
         return False
     
     return True
 
-def run_labelstudio_insert():
-    logging.info("################# Input Log Data in Labelstudio #################")
-    client = LabelStudio(
-        base_url="https://labelstudio-api.berlin-united.com",
-        api_key=os.environ.get("LABELSTUDIO_API_KEY"),
-    )
+def run_labelstudio_insert(v_client, l_client, log):
+    logging.info("\t\tInput Images in Labelstudio")
 
-    v_client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
+    for camera in ["BOTTOM", "TOP"]:
 
-    logs = v_client.logs.list()
-
-    for log in sorted(logs, key=lambda x: x.id):
-        for camera in ["BOTTOM", "TOP"]:
-            print(f"handling log {log.id}-{camera}")
-            if is_done(v_client, log.id, camera):
-                print(f"\t{log.id}-{camera} is already done")
-                continue
-            image_list = get_images_per_log(v_client, log.id, camera)
-            print(f"\tnum images: {len(image_list)}")
-            project_names = calculate_project_names(log.id, image_list, camera)
-            create_project_if_not_exist(client, project_names, log.id)
-            import_image_tasks_faster(client, v_client, log.id, image_list, camera)
+        if is_done(v_client, log.id, camera):
+            continue
+        image_list = get_images_per_log(v_client, log.id, camera)
+        logger.debug(f"\tnum images: {len(image_list)}")
+        project_names = calculate_project_names(log.id, image_list, camera)
+        create_project_if_not_exist(l_client, project_names, log.id)
+        import_image_tasks_faster(l_client, v_client, log.id, image_list, camera)
 
 
 if __name__ == "__main__":

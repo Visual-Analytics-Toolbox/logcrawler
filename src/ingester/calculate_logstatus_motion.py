@@ -45,7 +45,7 @@ def add_sensorlog_representations(log, sensor_log_path, client, force):
 
     new_motion_status_dict = is_done_motion(log.id, motion_status_dict, client)
     if not force and len(new_motion_status_dict) == 0:
-        print("\twe already calculated number of full sensor frames for this log")
+        logger.debug("\twe already calculated number of full sensor frames for this log")
     else:
         if force:
             new_motion_status_dict = motion_status_dict
@@ -57,7 +57,7 @@ def add_sensorlog_representations(log, sensor_log_path, client, force):
             try:
                 frame_number = frame["FrameInfo"].frameNumber
             except Exception as e:
-                logging.warning(
+                logger.warning(
                     f"FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
                 )
                 break
@@ -70,10 +70,10 @@ def add_sensorlog_representations(log, sensor_log_path, client, force):
                     # print("skip frame because representation is not present")
                     continue
                 except Exception as e:
-                    logging.error(
+                    logger.error(
                         f"error parsing {repr} in log {sensor_log_path} at frame {idx}"
                     )
-                    logging.error({e})
+                    logger.error({e})
 
         try:
             if "FrameInfo" in new_motion_status_dict:
@@ -81,25 +81,18 @@ def add_sensorlog_representations(log, sensor_log_path, client, force):
                     new_motion_status_dict.pop("FrameInfo")
                 )
 
-            logging.debug(new_motion_status_dict)
+            logger.debug(new_motion_status_dict)
             _ = client.log_status.update(log=log.id, **new_motion_status_dict)
         except Exception as e:
-            logging.error(f"\terror inputing the data {sensor_log_path}")
-            logging.error(e)
+            logger.error(f"\terror inputing the data {sensor_log_path}")
+            logger.error(e)
             quit()
 
 
-def calculate_logstatus_motion(log_root_path, client):
-    existing_data = client.logs.list()
-
-    def sort_key_fn(log):
-        return log.id
-
-    for log in sorted(existing_data, key=sort_key_fn):
-        sensor_log_path = Path(log_root_path) / log.sensor_log_path
-
-        logging.info(f"{log.id}: {sensor_log_path}")
-        add_sensorlog_representations(log, sensor_log_path, client, force=False)
+def calculate_logstatus_motion(log_root_path, client, log, force=False):
+    logging.info("\t\tCalculate Log Status Motion")
+    sensor_log_path = Path(log_root_path) / log.sensor_log_path
+    add_sensorlog_representations(log, sensor_log_path, client, force=force)
 
 
 if __name__ == "__main__":
@@ -110,5 +103,6 @@ if __name__ == "__main__":
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
-
-    calculate_logstatus_motion("/mnt/repl", client)
+    logs = client.logs.list()
+    for log in sorted(logs):
+        calculate_logstatus_motion("/mnt/repl", client, log)

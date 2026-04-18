@@ -67,59 +67,53 @@ def get_representation_set_from_log(log_file_path, representation_set):
     return representation_set
 
 
-def export_representation(log_root_path, client, force=False):
-    logging.info("################# Export Representations #################")
-    existing_logs = client.logs.list()
+def export_representation(log_root_path, client, log, force=False):
+    logging.info("\t\tExport Representations")
 
-    def sort_key_fn(data):
-        return data.log_path
+    log_path = Path(log_root_path) / log.log_path
 
-    for log in sorted(existing_logs, key=sort_key_fn):
-        logging.debug(f"{log.id}: {log.log_path}")
-        log_path = Path(log_root_path) / log.log_path
+    actual_log_folder = log_path.parent
+    repr_json_file = actual_log_folder / "representation.json"
+    # continue if json file already exists
+    if not is_done(log, repr_json_file, force):
+        gamelog_path = actual_log_folder / "game.log"
+        combined_log_path = actual_log_folder / "combined.log"
+        sensor_log_path = actual_log_folder / "sensor.log"
 
-        actual_log_folder = log_path.parent
-        repr_json_file = actual_log_folder / "representation.json"
-        # continue if json file already exists
-        if not is_done(log, repr_json_file, force):
-            gamelog_path = actual_log_folder / "game.log"
-            combined_log_path = actual_log_folder / "combined.log"
-            sensor_log_path = actual_log_folder / "sensor.log"
-
-            cognition_logged_representation = set()
-            motion_logged_representation = set()
-            if combined_log_path.is_file():
-                cognition_logged_representation = get_representation_set_from_log(
-                    combined_log_path, cognition_logged_representation
-                )
-            else:
-                cognition_logged_representation = get_representation_set_from_log(
-                    gamelog_path, cognition_logged_representation
-                )
-
-            motion_logged_representation = get_representation_set_from_log(
-                sensor_log_path, motion_logged_representation
-            )
-
-            if len(list(cognition_logged_representation)) > 0:
-                output_dict = {
-                    "cognition_representations": list(cognition_logged_representation)
-                }
-                if len(list(motion_logged_representation)) > 0:
-                    output_dict.update(
-                        {"motion_representations": list(motion_logged_representation)}
-                    )
-                with open(str(repr_json_file), "w", encoding="utf-8") as f:
-                    json.dump(output_dict, f, ensure_ascii=False, indent=4)
-
-            # update the database with the representations
-            with open(str(repr_json_file), "r") as file:
-                # Load the content of the file into a Python dictionary
-                representation_dict = json.load(file)
-
-            client.logs.update(
-                id=log.id,
-                representation_list=representation_dict,
+        cognition_logged_representation = set()
+        motion_logged_representation = set()
+        if combined_log_path.is_file():
+            cognition_logged_representation = get_representation_set_from_log(
+                combined_log_path, cognition_logged_representation
             )
         else:
-            logging.debug("\trepresentation.json already exists and force flag not set")
+            cognition_logged_representation = get_representation_set_from_log(
+                gamelog_path, cognition_logged_representation
+            )
+
+        motion_logged_representation = get_representation_set_from_log(
+            sensor_log_path, motion_logged_representation
+        )
+
+        if len(list(cognition_logged_representation)) > 0:
+            output_dict = {
+                "cognition_representations": list(cognition_logged_representation)
+            }
+            if len(list(motion_logged_representation)) > 0:
+                output_dict.update(
+                    {"motion_representations": list(motion_logged_representation)}
+                )
+            with open(str(repr_json_file), "w", encoding="utf-8") as f:
+                json.dump(output_dict, f, ensure_ascii=False, indent=4)
+
+        # update the database with the representations
+        with open(str(repr_json_file), "r") as file:
+            # Load the content of the file into a Python dictionary
+            representation_dict = json.load(file)
+
+        client.logs.update(
+            id=log.id,
+            representation_list=representation_dict,
+        )
+    else:
+        logging.debug("\trepresentation.json already exists and force flag not set")
