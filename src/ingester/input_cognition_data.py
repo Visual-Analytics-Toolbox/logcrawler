@@ -1,5 +1,6 @@
 from google.protobuf.json_format import MessageToDict
 from naoth.log import Reader as LogReader
+from collections import defaultdict
 from vaapi.client import Vaapi
 from naoth.log import Parser
 from pathlib import Path
@@ -48,7 +49,8 @@ def input_representation_done(client, log, representation_list):
     return new_list
 
 
-def input_representation_data(client, log, my_parser, representation_list):
+def input_representation_data(log_root_path, client, log, my_parser, representation_list):
+    log_path = Path(log_root_path) / log.log_path
     # get list of frames  for this log
     frames = client.cognitionframe.list(log=log.id)
     # Create a dictionary mapping frame_number to id
@@ -57,8 +59,8 @@ def input_representation_data(client, log, my_parser, representation_list):
     def get_id_by_frame_number(target_frame_number):
         return frame_to_id.get(target_frame_number, None)
 
-    game_log = LogReader(str(log.log_path), my_parser)
-    parsed_messages = list()
+    game_log = LogReader(str(log_path), my_parser)
+    parsed_messages = defaultdict(list)
     for idx, frame in enumerate(game_log):
         # stop parsing log if FrameInfo is missing
         try:
@@ -70,16 +72,20 @@ def input_representation_data(client, log, my_parser, representation_list):
             break
         for repr_name in representation_list:
             try:
+                (pos, size) = frame._fields[repr_name]  
                 data = MessageToDict(frame[repr_name])
                 if repr_name in ["BallCandidates", "BallCandidatesTop"]:
+                    
                     for patch in data["patches"]:
                         del patch["data"]
                         del patch["type"]
                 json_obj = {
                     "frame": get_id_by_frame_number(frame_number),
                     "representation_data": data,
+                    "start_pos": pos,
+                    "size": size,
                 }
-                parsed_messages.append(json_obj)
+                parsed_messages[repr_name].append(json_obj)
             except AttributeError:
                 # TODO only print something when in debug mode
                 # print("skip frame because representation is not present")
@@ -92,22 +98,27 @@ def input_representation_data(client, log, my_parser, representation_list):
                     f"error parsing {repr} in log {log.log_path} at frame {idx}"
                 )
                 logging.error({e})
-        if idx % 600 == 0:
-            try:
-                model = getattr(client, repr_name.lower())
-                model.bulk_create(repr_list=parsed_messages)
-                parsed_messages.clear()
-            except Exception as e:
-                print(f"error inputing the data for {log.log_path}")
-                print(e)
-                quit()
 
-    try:
-        model = getattr(client, repr_name.lower())
-        model.bulk_create(repr_list=parsed_messages)
-    except Exception as e:
-        print(e)
-        print(f"error inputing the data {log.log_path}")
+    chunk_size = 100
+    for repr_name, obj_list in parsed_messages.items():
+        for i in range(0, len(obj_list), chunk_size):
+            # Slice the list from current index 'i' to 'i + chunk_size'
+            chunk = obj_list[i : i + chunk_size]
+            try:
+                print(f"Inserting {len(chunk)} items for {repr_name.lower()} (Index {i})")
+
+                # Dynamically get the model from the client
+                model = getattr(client, repr_name.lower())
+                
+                # Pass ONLY the current slice (chunk) to the API
+                model.bulk_create(repr_list=chunk)
+                
+            except Exception as e:
+                print(f"Error inputting data for {log.log_path}")
+                print(f"Failed at {repr_name} index {i}: {e}")
+                # Consider 'break' or 'continue' instead of 'quit()' 
+                # if you want to try the next representation
+                quit()
 
 
 def get_cognition_representations(log):
@@ -132,33 +143,46 @@ def get_cognition_representations(log):
         cog_repr.remove("BehaviorStateComplete")
     if "BehaviorStateSparse" in cog_repr:
         cog_repr.remove("BehaviorStateSparse")
+    # HACK
+    if "RoleDecisionModel" in cog_repr:
+        cog_repr.remove("RoleDecisionModel")
 
     return cog_repr
 
 
-def main(log_root_path, client):
-    existing_data = client.logs.list()
+def main(log_root_path, client, log):
+    log_path = Path(log_root_path) / log.log_path
 
+    print(f"{log.id}: {log_path}")
+
+    # get
+    representation_list = get_cognition_representations(log)
+
+    new_representation_list = input_representation_done(client, log, representation_list)
+    if len(new_representation_list) == 0:
+        print(
+            "\tall required representations are already inserted"
+        )
+        return
+
+    my_parser = Parser()
+    my_parser.register("GoalPerceptTop", "GoalPercept")
+    my_parser.register("FieldPerceptTop", "FieldPercept")
+    my_parser.register("BallCandidatesTop", "BallCandidates")
+    input_representation_data(log_root_path, client, log, my_parser, new_representation_list)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+
+    client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
     def sort_key_fn(log):
         return log.id
 
-    for log in sorted(existing_data, key=sort_key_fn):
-        log_path = Path(log_root_path) / log.log_path
-
-        print(f"{log.id}: {log_path}")
-
-        # get
-        representation_list = get_cognition_representations(log)
-
-        new_representation_list = input_representation_done(client, log, representation_list)
-        if len(new_representation_list) == 0:
-            print(
-                "\tall required representations are already inserted"
-            )
-            continue
-        
-        my_parser = Parser()
-        my_parser.register("GoalPerceptTop", "GoalPercept")
-        my_parser.register("FieldPerceptTop", "FieldPercept")
-        my_parser.register("BallCandidatesTop", "BallCandidates")
-        input_representation_data(client, log, my_parser, new_representation_list)
+    logs = client.logs.list()
+    for log in sorted(logs, key=sort_key_fn, reverse=True):
+        main("/mnt/repl", client, log)
