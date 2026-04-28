@@ -10,6 +10,7 @@ from .calculate_image_stats import calculate_image_stats as calculate_image_stat
 from .sync_labelstudio import run_labelstudio_insert as run_labelstudio_insert
 from .input_motion_frames import input_motion_frames as input_motion_frames
 from .input_cognition_data import main as input_cognition_data_main
+from .input_motion_data import main as input_motion_data_main
 from .extract_images import extract_images as extract_images
 from .combine_logs import combine_logs as combine_logs
 from .input_images import input_images as input_images
@@ -37,3 +38,4 @@ def process_log_data(log_root_path, v_client, l_client):
         run_labelstudio_insert(v_client, l_client, log)
         calculate_image_stats(log_root_path, v_client, log)
         input_cognition_data_main(log_root_path, v_client, log)
+        input_motion_data_main(log_root_path, v_client, log)

@@ -20,9 +20,9 @@ def input_representation_done(client, log, representation_list):
         print(e)
 
     # check if number of frames were calculated already
-    if not log_status.FrameInfo or int(log_status.FrameInfo) == 0:
+    if not log_status.num_motion_frames or int(log_status.num_motion_frames) == 0:
         print(
-            "\tWARNING: first calculate the number of cognition frames and put it in the db"
+            "\tWARNING: first calculate the number of motion frames and put it in the db"
         )
         quit()
 
@@ -50,18 +50,18 @@ def input_representation_done(client, log, representation_list):
 
 
 def input_representation_data(log_root_path, client, log, my_parser, representation_list):
-    log_path = Path(log_root_path) / log.log_path
+    log_path = Path(log_root_path) / log.sensor_log_path
     # get list of frames  for this log
-    frames = client.cognitionframe.list(log=log.id)
+    frames = client.motionframe.list(log=log.id)
     # Create a dictionary mapping frame_number to id
     frame_to_id = {frame.frame_number: frame.id for frame in frames}
 
     def get_id_by_frame_number(target_frame_number):
         return frame_to_id.get(target_frame_number, None)
 
-    game_log = LogReader(str(log_path), my_parser)
+    sensor_log = LogReader(str(log_path), my_parser)
     parsed_messages = defaultdict(list)
-    for idx, frame in enumerate(game_log):
+    for idx, frame in enumerate(sensor_log):
         # stop parsing log if FrameInfo is missing
         try:
             frame_number = frame["FrameInfo"].frameNumber
@@ -73,18 +73,13 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
         for repr_name in representation_list:
             try:
                 (pos, size) = frame._fields[repr_name]  
-                data = MessageToDict(frame[repr_name])
-                if repr_name in ["BallCandidates", "BallCandidatesTop"]:
-                    
-                    for patch in data["patches"]:
-                        del patch["data"]
-                        del patch["type"]
+
                 json_obj = {
                     "frame": get_id_by_frame_number(frame_number),
-                    "representation_data": data,
                     "start_pos": pos,
                     "size": size,
                 }
+
                 parsed_messages[repr_name].append(json_obj)
             except AttributeError:
                 # TODO only print something when in debug mode
@@ -95,18 +90,17 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
                 continue
             except Exception as e:
                 logging.error(
-                    f"error parsing {repr} in log {log.log_path} at frame {idx}"
+                    f"error parsing {repr} in log {log_path} at frame {idx}"
                 )
                 logging.error({e})
 
-    chunk_size = 100
+    chunk_size = 500
     for repr_name, obj_list in parsed_messages.items():
         for i in range(0, len(obj_list), chunk_size):
             # Slice the list from current index 'i' to 'i + chunk_size'
             chunk = obj_list[i : i + chunk_size]
             try:
                 print(f"Inserting {len(chunk)} items for {repr_name.lower()} (Index {i})")
-
                 # Dynamically get the model from the client
                 model = getattr(client, repr_name.lower())
                 
@@ -114,49 +108,29 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
                 model.bulk_create(repr_list=chunk)
                 
             except Exception as e:
-                print(f"Error inputting data for {log.log_path}")
+                print(f"Error inputting data for {log_path}")
                 print(f"Failed at {repr_name} index {i}: {e}")
                 # Consider 'break' or 'continue' instead of 'quit()' 
                 # if you want to try the next representation
                 quit()
 
 
-def get_cognition_representations(log):
-    """
-    remove representation that we want to parse another way from the list of saved representations
-    the saved representation were calculated earlier based on the combined.log
-    """
-    cog_repr = log.representation_list["cognition_representations"]
-    if "ImageJPEGTop" in cog_repr:
-        cog_repr.remove("ImageJPEGTop")
-    if "ImageJPEG" in cog_repr:
-        cog_repr.remove("ImageJPEG")
-    if "ImageTop" in cog_repr:
-        cog_repr.remove("ImageTop")
-    if "Image" in cog_repr:
-        cog_repr.remove("Image")
+def get_motion_representations(log):
+    motion_repr = log.representation_list["motion_representations"]
     # remove Frameinfo from the list, frameinfo is inserted as frames in db and not a seperate representation
-    if "FrameInfo" in cog_repr:
-        cog_repr.remove("FrameInfo")
-    # remove BehaviorStateComplete and BehaviorStateSparse, this will be parsed seperately and in different models
-    if "BehaviorStateComplete" in cog_repr:
-        cog_repr.remove("BehaviorStateComplete")
-    if "BehaviorStateSparse" in cog_repr:
-        cog_repr.remove("BehaviorStateSparse")
-    # HACK
-    if "RoleDecisionModel" in cog_repr:
-        cog_repr.remove("RoleDecisionModel")
+    if "FrameInfo" in motion_repr:
+        motion_repr.remove("FrameInfo")
 
-    return cog_repr
+    return motion_repr
 
 
 def main(log_root_path, client, log):
-    log_path = Path(log_root_path) / log.log_path
+    log_path = Path(log_root_path) / log.sensor_log_path
 
     print(f"{log.id}: {log_path}")
 
     # get
-    representation_list = get_cognition_representations(log)
+    representation_list = get_motion_representations(log)
 
     new_representation_list = input_representation_done(client, log, representation_list)
     if len(new_representation_list) == 0:
@@ -166,9 +140,6 @@ def main(log_root_path, client, log):
         return
 
     my_parser = Parser()
-    my_parser.register("GoalPerceptTop", "GoalPercept")
-    my_parser.register("FieldPerceptTop", "FieldPercept")
-    my_parser.register("BallCandidatesTop", "BallCandidates")
     input_representation_data(log_root_path, client, log, my_parser, new_representation_list)
 
 
