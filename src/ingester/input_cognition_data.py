@@ -8,6 +8,9 @@ import logging
 import os
 
 
+logger = logging.getLogger(__name__)
+
+
 def input_representation_done(client, log, representation_list):
     # get the log status - showing how many entries per representation there should be
     try:
@@ -17,11 +20,11 @@ def input_representation_done(client, log, representation_list):
             return False
         log_status = response[0]
     except Exception as e:
-        print(e)
+        logger.error(e)
 
     # check if number of frames were calculated already
     if not log_status.FrameInfo or int(log_status.FrameInfo) == 0:
-        print(
+        logger.error(
             "\tWARNING: first calculate the number of cognition frames and put it in the db"
         )
         quit()
@@ -40,7 +43,7 @@ def input_representation_done(client, log, representation_list):
                 )
                 new_list.append(repr)
         except Exception as e:
-            print(e)
+            logger.error(e)
             new_list.append(repr)
 
     if len(new_list) > 0:
@@ -114,8 +117,8 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
                 model.bulk_create(repr_list=chunk)
                 
             except Exception as e:
-                print(f"Error inputting data for {log.log_path}")
-                print(f"Failed at {repr_name} index {i}: {e}")
+                logger.error(f"Error inputting data for {log.log_path}")
+                logger.error(f"Failed at {repr_name} index {i}: {e}")
                 # Consider 'break' or 'continue' instead of 'quit()' 
                 # if you want to try the next representation
                 quit()
@@ -151,16 +154,14 @@ def get_cognition_representations(log):
 
 
 def main(log_root_path, client, log):
-    log_path = Path(log_root_path) / log.log_path
-
-    print(f"{log.id}: {log_path}")
+    logging.info("\t\tInput Cognition Frames")
 
     # get
     representation_list = get_cognition_representations(log)
 
     new_representation_list = input_representation_done(client, log, representation_list)
     if len(new_representation_list) == 0:
-        print(
+        logger.debug(
             "\tall required representations are already inserted"
         )
         return
