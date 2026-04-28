@@ -44,6 +44,7 @@ global_label_config = """
         <Label value="Field Border" background="green"/>
         <Label value="Person" background="red"/>
         <Label value="Goalpost" background="#AD8B00" />
+        <Label value="Grass" background="#FF00FF" />
       </PolygonLabels>
     </View>
   </View>

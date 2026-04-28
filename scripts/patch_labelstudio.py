@@ -35,6 +35,7 @@ global_label_config = """
         <Label value="Field Border" background="green"/>
         <Label value="Person" background="red"/>
         <Label value="Goalpost" background="#AD8B00" />
+        <Label value="Grass" background="#FF00FF" />
       </PolygonLabels>
     </View>
   </View>
@@ -181,4 +182,4 @@ if __name__ == "__main__":
         api_key=os.environ.get("LABELSTUDIO_API_KEY"),
     )
     #patch_ls_webhook(client)
-    patch_image_url(client)
+    patch_project_config(client)
