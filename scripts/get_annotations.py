@@ -6,7 +6,9 @@ from label_studio_sdk import LabelStudio
 def get_annotation(l_client,img_obj):
     task_id = img_obj.labelstudio_url.split("=")[-1]
     task = l_client.tasks.get(id=task_id)
-    return task.annotations
+    # there can be multiple annotations per task if multiple people annotate the same image, our images have only one annotation though
+    # that's why I always take the first annotation here
+    return task.annotations[0]["result"]
 
 if __name__ == "__main__":
     v_client = Vaapi(
@@ -23,4 +25,5 @@ if __name__ == "__main__":
     for img in validated_images:
         annotation = get_annotation(l_client,img)
         print(annotation)
+        #v_client.image.update(annotation=annotation)
         quit()
