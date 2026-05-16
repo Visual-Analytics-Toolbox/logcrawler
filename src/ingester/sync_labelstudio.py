@@ -135,7 +135,7 @@ def create_project_if_not_exist(client, project_names, log_id):
             existing_webhook = client.webhooks.list(project=project.id)
             if not existing_webhook:
                 response = client.webhooks.create(
-                    url="https://vat.berlin-united.com/api/image/validate",
+                    url="https://vat.berlin-united.com/api/images/validate",
                     headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
                     is_active=True,
                     project=project.id,

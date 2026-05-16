@@ -119,14 +119,15 @@ def patch_ls_webhook(client):
     existing_projects = list(client.projects.list(include="title,id"))
     for project in existing_projects:
         print(project.title)
-        # FIXME only add webhook to projects starting with log_
+        if not project.title.startswith("log"):
+            continue
         a = client.webhooks.list(project=project.id)
         print(f"\t{a}")
 
         if not a:
-            print("\tTODO: create webhook")
+            print("\tCreate Webhook")
             response = client.webhooks.create(
-                url="https://vat.berlin-united.com/api/image/validate",
+                url="https://vat.berlin-united.com/api/images/validate",
                 headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
                 is_active=True,
                 project=project.id,
@@ -140,9 +141,10 @@ def patch_ls_webhook(client):
             )
             print(f"\t{response}")
         else:
-            print("\twebhook already exists")
+            print("\tWebhook already exists")
             client.webhooks.update(
                 id=a[0].id,
+                url="https://vat.berlin-united.com/api/images/validate",
                 send_for_all_actions=False,
                 actions=[
                     "ANNOTATION_CREATED",
@@ -182,4 +184,4 @@ if __name__ == "__main__":
         api_key=os.environ.get("LABELSTUDIO_API_KEY"),
     )
     #patch_ls_webhook(client)
-    patch_project_config(client)
+    patch_ls_webhook(client)
