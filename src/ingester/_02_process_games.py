@@ -1,7 +1,9 @@
 from typing import Dict, Mapping
+from vaapi.client import Vaapi
 from pathlib import Path
 import logging
 import csv
+import os
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +23,10 @@ def check_team_name(all_teams: Mapping[str, int], team_name: str) -> bool:
     return team_name in all_teams.keys()
 
 
-def get_game_comment(game):
+def get_game_comment(game: Path) -> str:
+    """
+    Read the comments.txt file from a game folder if it exists and returns the contents as string
+    """
     if Path(game / "comments.txt").is_file():
         with open(game / "comments.txt") as f:
             comment = f.read()
@@ -31,8 +36,8 @@ def get_game_comment(game):
     return comment
 
 
-def sort_key_fn(data):
-    return data.id
+def sort_key_fn(event):
+    return event.id
 
 
 def input_games(log_root_path, client):
@@ -204,3 +209,12 @@ def input_other_games(log_root_path, client):
                         continue
         else:
             print(f"Error: The file '{file_path}' does not exist.")
+
+
+if __name__ == "__main__":
+    v_client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+
+    input_games("/mnt/repl", v_client)
