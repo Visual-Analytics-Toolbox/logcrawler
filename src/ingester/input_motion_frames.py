@@ -95,4 +95,9 @@ if __name__ == "__main__":
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
 
-    input_motion_frames("/mnt/repl", client)
+    def sort_key_fn(log):
+        return log.id
+
+    logs = client.logs.list()
+    for log in sorted(logs, key=sort_key_fn, reverse=True):
+        input_motion_frames("/mnt/repl", client, log)
