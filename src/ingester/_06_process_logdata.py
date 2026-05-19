@@ -9,6 +9,7 @@ from .representation_exporter import export_representation as export_representat
 from .calculate_image_stats import calculate_image_stats as calculate_image_stats
 from .sync_labelstudio import run_labelstudio_insert as run_labelstudio_insert
 from .input_motion_frames import input_motion_frames as input_motion_frames
+from .create_log_video import create_frame_videos as create_frame_videos
 from .input_cognition_data import main as input_cognition_data_main
 from .input_motion_data import main as input_motion_data_main
 from .extract_images import extract_images as extract_images
@@ -39,3 +40,4 @@ def process_log_data(log_root_path, v_client, l_client):
         calculate_image_stats(log_root_path, v_client, log)
         input_cognition_data_main(log_root_path, v_client, log)
         input_motion_data_main(log_root_path, v_client, log)
+        create_frame_videos(log_root_path, v_client, log)
