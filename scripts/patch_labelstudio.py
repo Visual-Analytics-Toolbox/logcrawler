@@ -127,7 +127,7 @@ def patch_ls_webhook(client):
         if not a:
             print("\tCreate Webhook")
             response = client.webhooks.create(
-                url="https://vat.berlin-united.com/api/images/validate",
+                url="https://vat.berlin-united.com/api/images/validate/",
                 headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
                 is_active=True,
                 project=project.id,
@@ -144,7 +144,8 @@ def patch_ls_webhook(client):
             print("\tWebhook already exists")
             client.webhooks.update(
                 id=a[0].id,
-                url="https://vat.berlin-united.com/api/images/validate",
+                url="https://vat.berlin-united.com/api/images/validate/",
+                headers={"Authorization": f"Token {os.environ.get('VAT_API_TOKEN')}"},
                 send_for_all_actions=False,
                 actions=[
                     "ANNOTATION_CREATED",
