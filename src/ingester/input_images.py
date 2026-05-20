@@ -1,3 +1,4 @@
+from vaapi.client import Vaapi
 from typing import Generator, List
 from pathlib import Path
 from time import sleep
@@ -38,8 +39,8 @@ def handle_insertion(client, log_root_path, individual_extracted_folder, log, ca
     if not Path(individual_extracted_folder).is_dir():
         return
 
-    if is_done(client, log.id, camera, image_type):
-        return
+    #if is_done(client, log.id, camera, image_type):
+    #    return
 
     # get list of frames  for this log
     frames = client.cognitionframe.list(log=log.id)
@@ -71,7 +72,7 @@ def handle_insertion(client, log_root_path, individual_extracted_folder, log, ca
                 "camera": camera,
                 "type": image_type,
                 "image_url": url_path,
-                # HACK we need to provide some default values
+                # HACK we need to provide some default values, until we fix the bulk create function in vat
                 "blurredness_value": None,
                 "brightness_value": None,
                 "resolution": None,
@@ -138,3 +139,22 @@ def input_images(log_root_path, client, log):
     handle_insertion(client, log_root_path, top_path, log, camera="TOP", image_type="RAW")
     handle_insertion(client, log_root_path, bottom_path_jpg, log, camera="BOTTOM", image_type="JPEG")
     handle_insertion(client, log_root_path, top_path_jpg, log, camera="TOP", image_type="JPEG")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+
+    client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+
+    def sort_key_fn(log):
+        return log.id
+    
+    logs = client.logs.list()
+    for log in sorted(logs, key=sort_key_fn, reverse=False):
+        if log.id != 13:
+            continue
+        input_images("/mnt/repl", client, log)
