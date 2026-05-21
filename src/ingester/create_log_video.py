@@ -13,8 +13,7 @@ def create_frame_mappings(frames, frame_count, images_generator, concat_file_pat
     image_lookup = {img.frame.id: img.image_url for img in images_generator}
 
     last_valid_url = None
-    pending_duration = 0.0
-    last_valid_frame_number = None
+    skipped_frames = 0
     mapping_data = []
     current_pts = 0.0  # Video time starts at 0.0 seconds
 
@@ -25,57 +24,41 @@ def create_frame_mappings(frames, frame_count, images_generator, concat_file_pat
             if idx < 2:
                 if frames[idx+1].frame_number - frame.frame_number > 30:
                     print(f"skipping frame {frame.frame_number}")
+                    skipped_frames += 1
                     continue
 
-            # 1. Calculate duration for the current frame slot
-            if idx < frame_count - 1:
-                duration = (frames[idx+1].frame_time - frame.frame_time) / 1000
-            else:
-                duration = 0.033  # Placeholder for the final frame
-
+            duration =  0.033
             image_url = image_lookup.get(frame.id)
 
             if image_url:
-                # If we already have a previous image waiting to be written, write it now
-                # with all the accumulated duration from any missing frames that followed it
-                if last_valid_url is not None:
-                    concat_file.write(f"file '{log_root_path}/{last_valid_url}'\n")
-                    concat_file.write(f"duration {pending_duration}\n")
+                concat_file.write(f"file '{log_root_path}/{image_url}'\n")
+                concat_file.write(f"duration {duration}\n")
 
-                    mapping_data.append({
-                        "pts": round(current_pts, 4),
-                        "duration": round(pending_duration, 4),
-                        "robot_frame": last_valid_frame_number
-                    })
-                    # Advance the video timeline by the duration we just committed
-                    current_pts += pending_duration
-                
+                mapping_data.append({
+                    "pts": round(current_pts, 4),
+                    "duration": round(duration, 4),
+                    "robot_frame": frame.frame_number
+                })
+
                 # Reset the tracker for this new valid image
                 last_valid_url = image_url
-                last_valid_frame_number = frame.frame_number
-                pending_duration = duration
             else:
-                # No image for this frame! 
-                # Accumulate this duration into the last known valid image
-                pending_duration += duration
+                print("no image on frame", frame.frame_number)
+                concat_file.write(f"file '{log_root_path}/{last_valid_url}'\n")
+                concat_file.write(f"duration {duration}\n")
 
-        # After the loop finishes, we must write out the very last valid image 
-        # with whatever remaining duration it accumulated
-        if last_valid_url is not None:
-            concat_file.write(f"file '{log_root_path}/{last_valid_url}'\n")
-            concat_file.write(f"duration {pending_duration}\n")
-            
-            mapping_data.append({
-                "pts": round(current_pts, 4),
-                "duration": round(pending_duration, 4),
-                "robot_frame": last_valid_frame_number
-            })
-            # FFmpeg concat format requires repeating the final file entry without a duration
-            concat_file.write(f"file '{log_root_path}/{last_valid_url}'\n")
+                mapping_data.append({
+                    "pts": round(current_pts, 4),
+                    "duration": round(duration, 4),
+                    "robot_frame": frame.frame_number
+                })
+
+            current_pts += duration
 
     with open(str(json_filename), "w") as json_file:
         json.dump(mapping_data, json_file, indent=2)
 
+    return skipped_frames
 
 def create_frame_videos(log_root_path, client, log):
     log_path = Path(log_root_path) / Path(log.combined_log_path)
@@ -101,10 +84,14 @@ def create_frame_videos(log_root_path, client, log):
     top_json_filename = Path(extracted_folder) / "top.json"
     top_video_filename = Path(extracted_folder) / "top.mp4"
 
-    if bottom_video_filename.exists() and bottom_json_filename.exists():
-        return
-    if top_video_filename.exists() and top_json_filename.exists():
-        return
+    print(top_video_filename)
+
+    #if bottom_video_filename.exists() and bottom_json_filename.exists():
+    #    return
+    #if top_video_filename.exists() and top_json_filename.exists():
+    #    return
+
+    # TODO if video exists and frames in video match continue
 
     # get the number of frames and number of images per camera - abort if the ratio is off
     frame_count = client.cognitionframe.get_frame_count(log=log.id)["count"]
@@ -123,22 +110,47 @@ def create_frame_videos(log_root_path, client, log):
     frame_iterator = client.cognitionframe.list(log=log.id)
     frames = list(frame_iterator)
     frames = sorted(frames, key=sort_key_fn)
-    
+
     all_top_images_generator = client.image.list(log=log.id, camera="TOP", limit=300)
     all_bottom_images_generator = client.image.list(log=log.id, camera="TOP", limit=300)
 
-    create_frame_mappings(frames, frame_count, all_top_images_generator, top_concat_file_path, top_json_filename, log_root_path)
-    create_frame_mappings(frames, frame_count, all_bottom_images_generator, bottom_concat_file_path, bottom_json_filename, log_root_path)
+    skipped_frames = create_frame_mappings(frames, frame_count, all_top_images_generator, top_concat_file_path, top_json_filename, log_root_path)
+    create_video_file(top_concat_file_path, top_video_filename, frame_count, skipped_frames)
 
-    create_video_file(top_concat_file_path, top_video_filename)
-    create_video_file(bottom_concat_file_path, bottom_video_filename)
+    skipped_frames = create_frame_mappings(frames, frame_count, all_bottom_images_generator, bottom_concat_file_path, bottom_json_filename, log_root_path)
+    create_video_file(bottom_concat_file_path, bottom_video_filename, frame_count, skipped_frames)
+
+    # TODO patch log object here
 
 
-def create_video_file(concat_file_path, video_filename):
+def create_video_file(concat_file_path, video_filename, frame_count, skipped_frames):
+    # ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames -of csv=p=0 /mnt/repl/2026_lab-tests/OrangeBallStanding/3_26_Nao0028_260114-1335/extracted/top.mp4
+    if Path(video_filename).exists():
+        ffprobe_cmd = [
+            "ffprobe",
+            "-v", "error",
+            "-select_streams", "v:0",
+            "-count_frames",
+            "-show_entries", "stream=nb_read_frames",
+            "-of", "csv=p=0",
+            str(video_filename)
+        ]
+        print("Running FFProbe to count frames...")
+        try:
+            result= subprocess.run(ffprobe_cmd, capture_output=True, text=True, check=True)
+            video_frame_count = json.loads(result.stdout)
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error during FFProbe execution: {e}")
+
+        if frame_count - skipped_frames == video_frame_count:
+            print("video already created with correct number of frames")
+            return
+
     ffmpeg_cmd = [
         "ffmpeg", "-y",
         "-f", "concat",
         "-safe", "0",
+        "-r", "30",
         "-i", concat_file_path,
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
@@ -166,6 +178,9 @@ if __name__ == "__main__":
         return log.id
 
     logs = client.logs.list()
-    for log in sorted(logs, key=sort_key_fn, reverse=False):
+    for log in sorted(logs, key=sort_key_fn, reverse=True):
+        if log.id < 1000:
+            continue
+        print(log.id, log.log_path)
         create_frame_videos("/mnt/repl", client, log)
         

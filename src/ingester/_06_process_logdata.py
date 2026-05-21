@@ -25,7 +25,7 @@ def sort_key_fn(data):
 def process_log_data(log_root_path, v_client, l_client):
     logs = v_client.logs.list()
     # TODO load logs in memory
-    for log in sorted(logs, key=sort_key_fn, reverse=True):
+    for log in sorted(logs, key=sort_key_fn, reverse=False):
         logging.info(f"######## Process Log {log} ########")
         combine_logs(log_root_path, v_client, log, force=False)
         export_representation(log_root_path, v_client, log, force=False)
