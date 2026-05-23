@@ -149,6 +149,12 @@ def get_cognition_representations(log):
     # HACK
     if "RoleDecisionModel" in cog_repr:
         cog_repr.remove("RoleDecisionModel")
+    if "ScanLineEdgelPerceptTop" in cog_repr:
+        cog_repr.remove("ScanLineEdgelPerceptTop")
+    if "ScanLineEdgelPercept" in cog_repr:
+        cog_repr.remove("ScanLineEdgelPercept")
+    if "AudioData" in cog_repr:
+        cog_repr.remove("AudioData")
 
     return cog_repr
 
