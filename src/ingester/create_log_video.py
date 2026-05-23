@@ -23,7 +23,6 @@ def create_frame_mappings(frames, frame_count, images_generator, concat_file_pat
             # skip first frames if the gaps are too large
             if idx < 2:
                 if frames[idx+1].frame_number - frame.frame_number > 30:
-                    print(f"skipping frame {frame.frame_number}")
                     skipped_frames += 1
                     continue
 
@@ -43,7 +42,6 @@ def create_frame_mappings(frames, frame_count, images_generator, concat_file_pat
                 # Reset the tracker for this new valid image
                 last_valid_url = image_url
             else:
-                print("no image on frame", frame.frame_number)
                 concat_file.write(f"file '{log_root_path}/{last_valid_url}'\n")
                 concat_file.write(f"duration {duration}\n")
 
@@ -61,6 +59,7 @@ def create_frame_mappings(frames, frame_count, images_generator, concat_file_pat
     return skipped_frames
 
 def create_frame_videos(log_root_path, client, log):
+    logging.info("\t\tCreate Videos for log")
     log_path = Path(log_root_path) / Path(log.combined_log_path)
 
     if not log.game:
@@ -84,20 +83,10 @@ def create_frame_videos(log_root_path, client, log):
     top_json_filename = Path(extracted_folder) / "top.json"
     top_video_filename = Path(extracted_folder) / "top.mp4"
 
-    print(top_video_filename)
-
-    #if bottom_video_filename.exists() and bottom_json_filename.exists():
-    #    return
-    #if top_video_filename.exists() and top_json_filename.exists():
-    #    return
-
-    # TODO if video exists and frames in video match continue
-
     # get the number of frames and number of images per camera - abort if the ratio is off
     frame_count = client.cognitionframe.get_frame_count(log=log.id)["count"]
     bottom_image_count = client.image.get_image_count(log=log.id, camera="BOTTOM")["count"]
     top_image_count = client.image.get_image_count(log=log.id, camera="TOP")["count"]
-    print(log.id, frame_count, bottom_image_count, top_image_count, top_image_count/frame_count)
 
     if top_image_count/frame_count < 0.97:
         return    
@@ -139,12 +128,13 @@ def create_video_file(concat_file_path, video_filename, frame_count, skipped_fra
         try:
             result= subprocess.run(ffprobe_cmd, capture_output=True, text=True, check=True)
             video_frame_count = json.loads(result.stdout)
+
+            if frame_count - skipped_frames == video_frame_count:
+                print("video already created with correct number of frames")
+                return
         except subprocess.CalledProcessError as e:
             print(f"❌ Error during FFProbe execution: {e}")
-
-        if frame_count - skipped_frames == video_frame_count:
-            print("video already created with correct number of frames")
-            return
+            print(f"❌ Trying to recreate the video")
 
     ffmpeg_cmd = [
         "ffmpeg", "-y",
