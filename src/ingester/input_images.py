@@ -72,10 +72,10 @@ def handle_insertion(client, log_root_path, individual_extracted_folder, log, ca
                 "camera": camera,
                 "type": image_type,
                 "image_url": url_path,
+                "log": log.id,
                 # HACK we need to provide some default values, until we fix the bulk create function in vat
                 "blurredness_value": None,
                 "brightness_value": None,
-                "resolution": None,
             }
         try:
             _ = client.image.bulk_create(data_list=image_ar)
