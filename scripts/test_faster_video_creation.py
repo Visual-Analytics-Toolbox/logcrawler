@@ -1,17 +1,10 @@
+import subprocess
 from naoth.log import Reader as LogReader
 from PIL import Image as PIL_Image
-from vaapi.client import Vaapi
 from naoth.log import Parser
-from pathlib import Path
 import numpy as np
-import subprocess
-import logging
 import json
-import os
 import io
-
-
-logger = logging.getLogger(__name__)
 
 
 def image_from_proto_jpeg(message):
@@ -54,34 +47,7 @@ def image_from_proto_jpeg(message):
     return frame_bytes
 
 
-def create_top_video(log_root_path, client, log):
-    if log.top_video_filename  is not None:
-        a = Path(log_root_path) / Path(log.top_video_filename)
-        if a.exists():
-            return
-
-    log_path = Path(log_root_path) / Path(log.combined_log_path)
-    if not log.game:
-        extracted_folder = str(log_path.parent / "extracted")
-    else:
-        extracted_folder = str(log_path.parent).replace("game_logs", "extracted")
-
-    top_folder = Path(extracted_folder) / "log_top_jpg"
-    
-    # abort if no jpeg logs
-    if not top_folder.exists():
-        return
-    
-    frame_count = client.cognitionframe.get_frame_count(log=log.id)["count"]
-    bottom_image_count = client.image.get_image_count(log=log.id, camera="BOTTOM")["count"]
-    top_image_count = client.image.get_image_count(log=log.id, camera="TOP")["count"]
-
-    if top_image_count/frame_count < 0.97:
-        return  
-
-    top_json_filename = Path(extracted_folder) / "top.json"
-    top_video_filename = Path(extracted_folder) / "top.mp4"
-
+def create_top_video():
     my_parser = Parser()
     my_parser.register("ImageJPEGTop", "Image")
 
@@ -95,7 +61,7 @@ def create_top_video(log_root_path, client, log):
         "-i", "-",                 # Read from stdin
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",     # Output format (standard for MP4 playback)
-        str(top_video_filename)
+        str("top.mp4")
     ]
 
     process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
@@ -103,7 +69,7 @@ def create_top_video(log_root_path, client, log):
     mapping_data = []
     current_pts = 0.0
     duration =  0.033
-    with LogReader(log_path, my_parser) as reader:
+    with LogReader("combined.log", my_parser) as reader:
         for frame in reader.read():
             try:
                 frame_number = frame["FrameInfo"].frameNumber
@@ -131,43 +97,10 @@ def create_top_video(log_root_path, client, log):
     process.stdin.close()
     process.wait()
 
-    with open(str(str(top_json_filename)), "w") as json_file:
+    with open(str("top.json"), "w") as json_file:
         json.dump(mapping_data, json_file, indent=2)
-    
-    # patch log object
-    client.logs.update(
-        id=log.id,
-        top_video_path=top_video_filename,
-    )
 
-
-def create_bottom_video(log_root_path, client, log):
-    if log.bottom_video_filename  is not None:
-        a = Path(log_root_path) / Path(log.bottom_video_filename)
-        if a.exists():
-            return
-
-    log_path = Path(log_root_path) / Path(log.combined_log_path)
-    if not log.game:
-        extracted_folder = str(log_path.parent / "extracted")
-    else:
-        extracted_folder = str(log_path.parent).replace("game_logs", "extracted")
-
-    bottom_folder = Path(extracted_folder) / "log_bottom_jpg"
-    
-    # abort if no jpeg logs
-    if not bottom_folder.exists():
-        return
-    
-    frame_count = client.cognitionframe.get_frame_count(log=log.id)["count"]
-    bottom_image_count = client.image.get_image_count(log=log.id, camera="BOTTOM")["count"]
-
-    if bottom_image_count/frame_count < 0.97:
-        return  
-
-    bottom_json_filename = Path(extracted_folder) / "bottom.json"
-    bottom_video_filename = Path(extracted_folder) / "bottom.mp4"
-
+def create_bottom_video():
     my_parser = Parser()
     my_parser.register("ImageJPEG", "Image")
     my_parser.register("ImageJPEGTop", "Image")
@@ -182,7 +115,7 @@ def create_bottom_video(log_root_path, client, log):
         "-i", "-",                 # Read from stdin
         "-c:v", "libx264",
         "-pix_fmt", "yuv420p",     # Output format (standard for MP4 playback)
-        str(bottom_video_filename)
+        str("bottom.mp4")
     ]
 
     process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
@@ -190,8 +123,7 @@ def create_bottom_video(log_root_path, client, log):
     mapping_data = []
     current_pts = 0.0
     duration =  0.033
-
-    with LogReader(log_path, my_parser) as reader:
+    with LogReader("combined.log", my_parser) as reader:
         for frame in reader.read():
             try:
                 frame_number = frame["FrameInfo"].frameNumber
@@ -220,39 +152,12 @@ def create_bottom_video(log_root_path, client, log):
 
     process.stdin.close()
     process.wait()
-    with open(str(bottom_json_filename), "w") as json_file:
+    with open(str("bottom.json"), "w") as json_file:
         json.dump(mapping_data, json_file, indent=2)
 
-    # patch log object
-    client.logs.update(
-        id=log.id,
-        bottom_video_path=bottom_video_filename,
-    )
-    
-
-def create_frame_videos(log_root_path, client, log):
-    logging.info("\t\tCreate Videos for log")
-    
-    create_top_video(log_root_path, client, log)
-    create_bottom_video(log_root_path, client, log)
-
+def create_videos():
+    create_top_video()
+    create_bottom_video()
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger("httpx").setLevel(logging.ERROR)
-
-    client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
-
-    def sort_key_fn(log):
-        return log.id
-
-    logs = client.logs.list()
-    for log in sorted(logs, key=sort_key_fn, reverse=True):
-        if log.id < 1000:
-            continue
-        print(log.id, log.log_path)
-        create_frame_videos("/mnt/repl", client, log)
-        quit()
+    create_videos()
