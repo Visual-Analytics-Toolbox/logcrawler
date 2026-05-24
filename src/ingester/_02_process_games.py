@@ -50,6 +50,9 @@ def input_games(log_root_path, client):
             logging.debug(f"\tignoring {event.event_folder} folder for game insertion")
             continue
         all_games = [f for f in ev.iterdir() if f.is_dir()]
+
+
+        game_insert_list = list()
         for game in sorted(all_games):
             logging.debug(f"parsing folder {game}")
             if (
@@ -83,39 +86,35 @@ def input_games(log_root_path, client):
             # TODO check for comments here
             comment = get_game_comment(game)
 
-            # FIXME use patch for comments
-            try:
-                response = client.games.create(
-                    event=event.id,
-                    team1=all_teams[team1],
-                    team2=all_teams[team2],
-                    half=halftime,
-                    start_time=timestamp,
-                )
-                logging.debug(f"successfully inserted {game.name} in db")
-            except Exception as e:
-                logging.error(
-                    f"error occured when trying to insert game {game.name}:{e}"
-                )
+            if "test" in game.name.lower():
+                testgame_flag = True
+            else:
+                testgame_flag = False
 
-            # patch game object for testgame flag
-            # FIXME that should go into games
-            try:
-                if "test" in game.name.lower():
-                    testgame_flag = True
-                else:
-                    testgame_flag = False
+            game_dict = {
+                "event": event.id,
+                "team1": all_teams[team1],
+                "team2": all_teams[team2],
+                "half": halftime,
+                "start_time": timestamp,
+                "is_testgame": testgame_flag,
+                "game_folder": str(game).removeprefix(log_root_path).strip("/"),
+                "comment": comment,
+            }
+            game_insert_list.append(game_dict)
+            
 
-                client.games.update(
-                    id=response.id,
-                    is_testgame=testgame_flag,
-                    game_folder=str(game).removeprefix(log_root_path).strip("/"),
-                    comment=comment,
-                )
-            except Exception as e:
-                logging.error(
-                    f"error occured when trying to update game {game.name}:{e}"
-                )
+        try:
+            response = client.games.bulk_create(
+            data_list=game_insert_list
+        )
+            logging.debug(f"successfully inserted {game.name} in db")
+        except Exception as e:
+            logging.error(
+                f"error occured when trying to insert game {game.name}:{e}"
+            )
+
+        
 
 def input_other_games(log_root_path, client):
     logging.info("################# Input Other Game Data #################")
