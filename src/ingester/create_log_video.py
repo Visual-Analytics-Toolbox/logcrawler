@@ -55,8 +55,8 @@ def image_from_proto_jpeg(message):
 
 
 def create_top_video(log_root_path, client, log):
-    if log.top_video_filename  is not None:
-        a = Path(log_root_path) / Path(log.top_video_filename)
+    if log.top_video_path  is not None:
+        a = Path(log_root_path) / Path(log.top_video_path)
         if a.exists():
             return
 
@@ -73,7 +73,6 @@ def create_top_video(log_root_path, client, log):
         return
     
     frame_count = client.cognitionframe.get_frame_count(log=log.id)["count"]
-    bottom_image_count = client.image.get_image_count(log=log.id, camera="BOTTOM")["count"]
     top_image_count = client.image.get_image_count(log=log.id, camera="TOP")["count"]
 
     if top_image_count/frame_count < 0.97:
@@ -142,8 +141,8 @@ def create_top_video(log_root_path, client, log):
 
 
 def create_bottom_video(log_root_path, client, log):
-    if log.bottom_video_filename  is not None:
-        a = Path(log_root_path) / Path(log.bottom_video_filename)
+    if log.bottom_video_path is not None:
+        a = Path(log_root_path) / Path(log.bottom_video_path)
         if a.exists():
             return
 
