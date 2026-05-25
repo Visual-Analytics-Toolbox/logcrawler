@@ -136,7 +136,7 @@ def create_top_video(log_root_path, client, log):
     # patch log object
     client.logs.update(
         id=log.id,
-        top_video_path=top_video_filename,
+        top_video_path=str(top_video_filename).removeprefix(log_root_path),
     )
 
 
@@ -225,7 +225,7 @@ def create_bottom_video(log_root_path, client, log):
     # patch log object
     client.logs.update(
         id=log.id,
-        bottom_video_path=bottom_video_filename,
+        bottom_video_path=str(bottom_video_filename).removeprefix(log_root_path),
     )
     
 
