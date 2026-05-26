@@ -110,6 +110,7 @@ def get_images_per_log(v_client, log_id, camera):
 def calculate_project_names(log_id, image_list, camera):
     logger.debug("\tcalculating project names")
     project_names = list()
+    # FIXME use count here
     for idx, image in enumerate(image_list):
         project_name = f"log-{log_id}_part-{idx // 1000}_{camera.lower()}"
         project_names.append(project_name)

@@ -1,0 +1,208 @@
+from label_studio_sdk import LabelStudio
+from collections import defaultdict
+from vaapi.client import Vaapi
+from urllib.parse import quote
+from pathlib import Path
+import logging
+import os
+
+
+global_label_config_video = """
+<View>
+  <Markdown value="$markdown_description"/>
+  <View style="display: flex; flex-direction: row; gap: 20px; align-items: flex-start; width: 100%;">
+    
+    <View style="flex: 1; min-width: 0; overflow: hidden;">
+      <Video name="video" value="$video" />
+    </View>
+
+    <View style="flex: 0 0 200px; position: sticky; top: 0;">
+      <Labels name="videoLabels" toName="video">
+        <Label value="Ball" background="red"/>
+        <Label value="Nao" background="blue"/>
+        <Label value="Robot" background="blue"/>
+        <Label value="Person" background="yellow"/>
+        <Label value="Referee" background="black"/>
+        <Label value="Penalty Mark" background="purple"/>
+      </Labels>
+      <View visibleWhen="region-selected" 
+            whenTagName="videoLabels" 
+            whenLabelValue="Nao,Robot">
+        <Header value="Assign ID / Player Number" size="6" />
+        <TextArea name="player_id" toName="video" 
+                  editable="true" 
+                  perRegion="true" 
+                  placeholder="e.g. Player 3" />
+      </View>
+    </View>
+  </View>
+  <VideoRectangle name="box" toName="video" />
+</View>
+"""
+
+view_config = {
+    "title": "Default",
+    "hiddenColumns": {
+        "explore": [
+            "tasks:inner_id",
+            "tasks:annotations_results",
+            "tasks:annotations_ids",
+            "tasks:predictions_score",
+            "tasks:predictions_model_versions",
+            "tasks:predictions_results",
+            "tasks:file_upload",
+            "tasks:storage_filename",
+            "tasks:created_at",
+            "tasks:updated_at",
+            "tasks:updated_by",
+            "tasks:avg_lead_time",
+            "tasks:draft_exists",
+        ],
+        "labeling": [
+            "tasks:data.markdown_description",
+            "tasks:id",
+            "tasks:inner_id",
+            "tasks:completed_at",
+            "tasks:cancelled_annotations",
+            "tasks:total_predictions",
+            "tasks:annotators",
+            "tasks:annotations_results",
+            "tasks:annotations_ids",
+            "tasks:predictions_score",
+            "tasks:predictions_model_versions",
+            "tasks:predictions_results",
+            "tasks:file_upload",
+            "tasks:storage_filename",
+            "tasks:created_at",
+            "tasks:updated_at",
+            "tasks:updated_by",
+            "tasks:avg_lead_time",
+            "tasks:draft_exists",
+        ],
+    },
+}
+
+def sort_key_fn(data):
+    return data.id
+
+def run_labelstudio_insert_videos():
+    logging.info("################# Input Video Data in Labelstudio #################")
+    client = LabelStudio(
+        base_url="https://labelstudio-api.berlin-united.com",
+        api_key=os.environ.get("LABELSTUDIO_API_KEY"),
+    )
+
+    v_client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+
+    existing_projects = list(client.projects.list(include="title,id", title="video-"))
+    existing_project_titles = [p.title for p in existing_projects]
+
+    # get logs
+    logs = v_client.logs.list()
+    for log in logs:
+        # dont create projects if we dont have videos for the logs
+        if not log.top_video_path:
+            continue
+        if not log.bottom_video_path:
+            continue
+
+        project_name = f"video-{log.id}"
+        print(f"\tcreate project {project_name} if_not_exist")
+
+        # create project if not exist
+        if project_name not in existing_project_titles:
+            project = client.projects.create(
+                title=project_name, label_config=global_label_config_video
+            )
+            client.views.create(project=project.id, data=view_config)
+            project_id = project.id
+        else:
+            project_id = [p.id for p in existing_projects if p.title == project_name][0]
+
+        print("project_id", project_id)
+        
+        # find existing tasks in the project
+        existing_task_urls = defaultdict(set)
+        all_tasks = client.tasks.list(project=project_id, include="data")
+        for task in all_tasks:
+            if "video" in task.data:
+                existing_task_urls[project_id].add(task.data["video"])
+
+        if not log.bottom_video_path:
+            continue
+
+        if not  log.top_video_path:
+            continue
+
+        bottom_video = log.bottom_video_path
+        top_video = log.top_video_path
+
+        if not f"https://logs.berlin-united.com/{bottom_video}" in existing_task_urls.get(project_id, set()):
+            # video already exists in this project's tasks, skip
+            safe_path = quote(bottom_video)
+            task_data = {
+                "video": f"https://logs.berlin-united.com/{bottom_video}",
+                "markdown_description": f"Log: [https://vat.berlin-united.com/api/logs/{log.id}](https://vat.berlin-united.com/api/logs/{log.id})  \n Raw: [{Path(bottom_video)}](https://logs.berlin-united.com/{safe_path})",
+            }
+            task = client.tasks.create(
+                project=project_id,
+                data=task_data,
+            )
+            view= client.views.list(project=project_id)[0]
+            labelstudio_url = f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}"
+            response = v_client.logs.update(id=log.id,bottom_video_path_labelstudio=labelstudio_url)
+
+        if not f"https://logs.berlin-united.com/{top_video}" in existing_task_urls.get(project_id, set()):
+            # video already exists in this project's tasks, skip
+            safe_path = quote(top_video)
+            task_data = {
+                "video": f"https://logs.berlin-united.com/{top_video}",
+                "markdown_description": f"Log: [https://vat.berlin-united.com/api/logs/{log.id}](https://vat.berlin-united.com/api/logs/{log.id})  \n Raw: [{Path(top_video)}](https://logs.berlin-united.com/{safe_path})",
+            }
+            task = client.tasks.create(
+                project=project_id,
+                data=task_data,
+            )
+            view= client.views.list(project=project_id)[0]
+            labelstudio_url = f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}"
+            response = v_client.logs.update(id=log.id,top_video_path_labelstudio=labelstudio_url)
+        """
+        games = v_client.games.list(event=event.id)
+        for game in sorted(games, key=sort_key_fn):
+            # check if video exist
+            videos = v_client.videos.list(game=game.id)
+            if len(videos) == 0:
+                continue
+            
+            # prefer PiCam videos for annotations
+            video = next((v for v in videos if v.type == 'PiCam'), videos[0] if videos else None)
+
+            if f"https://logs.berlin-united.com/{video.video_path}" in existing_task_urls.get(project_id, set()):
+                # video already exists in this project's tasks, skip
+                continue
+
+            safe_path = quote(video.video_path)
+            task_data = {
+                "video": f"https://logs.berlin-united.com/{video.video_path}",
+                "markdown_description": f"Video: [https://vat.berlin-united.com/api/videos/{video.id}](https://vat.berlin-united.com/api/videos/{video.id})  \n Raw: [{Path(video.video_path).name}](https://logs.berlin-united.com/{safe_path})",
+            }
+            response = client.projects.import_tasks(
+                id=project_id,
+                request=task_data,
+                return_task_ids=True,
+            )
+
+        all_tasks = client.tasks.list(project=project_id, include="data,id")
+        for task in all_tasks:
+            view= client.views.list(project=project_id)[0]
+            video_id = task.data["markdown_description"].split('\n')[0].split('/')[-1].strip().rstrip(')')
+            labelstudio_url = f"https://labelstudio.berlin-united.com/projects/{project_id}/data?tab={view.id}&task={task.id}"
+            print(video_id, labelstudio_url)
+
+            response = v_client.videos.update(id=video_id,labelstudio_url=labelstudio_url)
+        """
+if __name__ == "__main__":
+    run_labelstudio_insert_videos()
