@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 def is_done(client, log):
-    num_cog_frames = client.cognitionframe.list(log=log.id, closest_motion_frame="None")
-    num_mot_frames = client.motionframe.list(log=log.id, closest_cognition_frame="None")
+    num_cog_frames = client.cognitionframe.get_frame_count(log=log.id, closest_motion_frame="None")
+    num_mot_frames = client.motionframe.get_frame_count(log=log.id, closest_cognition_frame="None")
 
-    if num_cog_frames.count + num_mot_frames.count > 0:
+    if num_cog_frames["count"] + num_mot_frames["count"] > 0:
         return False
     
     return True
