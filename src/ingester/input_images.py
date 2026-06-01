@@ -39,8 +39,8 @@ def handle_insertion(client, log_root_path, individual_extracted_folder, log, ca
     if not Path(individual_extracted_folder).is_dir():
         return
 
-    #if is_done(client, log.id, camera, image_type):
-    #    return
+    if is_done(client, log.id, camera, image_type):
+        return
 
     # get list of frames  for this log
     frames = client.cognitionframe.list(log=log.id)
