@@ -5,6 +5,7 @@ TODO:
 - How does the tool handle corrupted logs?
 - How does it deal with format changes over time?
 - Are there validation or repair mechanisms?
+- However, the integration process for additional data sources is not fully explained.
 
 
 ## Development
