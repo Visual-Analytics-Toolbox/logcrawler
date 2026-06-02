@@ -1,6 +1,12 @@
 # Logcrawler
 The logcrawler is intended for inserting data from the logs to a postgres database. It expects that it has access to a visual analytics tool instance and a labelstudio instance and filesystem access to the logs.
 
+TODO:
+- How does the tool handle corrupted logs?
+- How does it deal with format changes over time?
+- Are there validation or repair mechanisms?
+
+
 ## Development
 You will need these environment variables in order to run the scripts:
 ```bash
