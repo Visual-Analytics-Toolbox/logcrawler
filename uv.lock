@@ -534,7 +534,7 @@ requires-dist = [
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "ruff", specifier = ">=0.14.0" },
     { name = "telemetry-parser", specifier = ">=0.3.0" },
-    { name = "vaapi", specifier = ">=0.7.50" },
+    { name = "vaapi", specifier = ">=0.7.51" },
 ]
 
 [[package]]
@@ -1515,7 +1515,7 @@ wheels = [
 
 [[package]]
 name = "vaapi"
-version = "0.7.50"
+version = "0.7.51"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1523,9 +1523,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/1a/d557cd2bc36ce613b25983c9079411f6780f6b446e6876bbd34a90babbab/vaapi-0.7.50.tar.gz", hash = "sha256:bc824e9868fcb08eb399091aada3ad5dae36e62d911f131e43b9123244b4fdb1", size = 28595, upload-time = "2026-05-25T09:41:28.944Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/0c/59b513c01599bdcdb8edde61306bf533a66b0c6461be04352b910a3c8efa/vaapi-0.7.51.tar.gz", hash = "sha256:cc4ecd5762cc48395ad048528a4606328d3b953a41a135665165387082f7404f", size = 40192, upload-time = "2026-06-03T07:45:23.536Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/4a/abbc855d7bb4b18b7e3df101b9e14468afe6f0552e524942b327793bcb95/vaapi-0.7.50-py3-none-any.whl", hash = "sha256:0e96f60a423800940c0f2869044d61b78ec2dbcbb12c2a96f89baddfcb12ff72", size = 61370, upload-time = "2026-05-25T09:41:27.533Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/1c/4bf13f0220f168f5f657a9a30039d556bd4d37abc7358e1f9fbeab378185/vaapi-0.7.51-py3-none-any.whl", hash = "sha256:884c379c29b25b8a71797151321398e912d81bd2e91ba4bfe4e38954f7fdd773", size = 72923, upload-time = "2026-06-03T07:45:22.336Z" },
 ]
 
 [[package]]
