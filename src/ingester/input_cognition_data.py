@@ -83,6 +83,7 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
                         del patch["data"]
                         del patch["type"]
                 json_obj = {
+                    "log": log.id,
                     "frame": get_id_by_frame_number(frame_number),
                     "representation_data": data,
                     "start_pos": pos,
