@@ -1,8 +1,5 @@
-"""
-Representation Exporter
-"""
-
 from naoth.log import Reader as LogReader
+from vaapi.client import Vaapi
 from naoth.log import Parser
 from pathlib import Path
 import logging
@@ -117,3 +114,20 @@ def export_representation(log_root_path, client, log, force=False):
         )
     else:
         logging.debug("\trepresentation.json already exists and force flag not set")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+
+    client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+
+    def sort_key_fn(log):
+        return log.id
+
+    logs = client.logs.list()
+    for log in sorted(logs, key=sort_key_fn, reverse=True):
+        export_representation("/mnt/repl", client, log, True)
