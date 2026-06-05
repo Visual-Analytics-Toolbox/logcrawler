@@ -129,6 +129,6 @@ if __name__ == "__main__":
         return log.id
 
     logs = client.logs.list()
-    for log in sorted(logs, key=sort_key_fn, reverse=True):
-        logging.info(f"\t{log.id}")
+    for log in sorted(logs, key=sort_key_fn, reverse=False):
+        logging.info(f"\t{log.id} - {log.log_path}")
         export_representation("/mnt/repl", client, log, True)
