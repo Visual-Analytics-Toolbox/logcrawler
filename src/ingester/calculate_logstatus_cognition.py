@@ -124,6 +124,10 @@ if __name__ == "__main__":
         base_url=os.environ.get("VAT_API_URL"),
         api_key=os.environ.get("VAT_API_TOKEN"),
     )
+
+    def sort_key_fn(log):
+        return log.id
+    
     logs = client.logs.list()
-    for log in sorted(logs):
+    for log in sorted(logs, key=sort_key_fn):
         calculate_logstatus_cognition("/mnt/repl", client, log)
