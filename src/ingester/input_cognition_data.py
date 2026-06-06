@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def input_representation_done(client, log, representation_list):
     # get the log status - showing how many entries per representation there should be
     try:
-        # we use list here because we only know the log_id here and not the if of the logstatus object
+        # we use list here because we only know the log_id here and not the id of the logstatus object
         response = client.log_status.list(log=log.id)
         if len(response) == 0:
             return False
@@ -38,7 +38,7 @@ def input_representation_done(client, log, representation_list):
             num_repr_frames = model.get_repr_count(log=log.id)["count"]
 
             if int(getattr(log_status, repr)) != int(num_repr_frames):
-                print(
+                logging.info(
                     f"\t{repr} inserted frames: {num_repr_frames}/{getattr(log_status, repr)}"
                 )
                 new_list.append(repr)
@@ -47,13 +47,12 @@ def input_representation_done(client, log, representation_list):
             new_list.append(repr)
 
     if len(new_list) > 0:
-        print("\tneed to run insertion again")
-        print(f"{new_list}")
+        logging.info(f"\tneed to run insertion again for {','.join(new_list)}")
     return new_list
 
 
 def input_representation_data(log_root_path, client, log, my_parser, representation_list):
-    log_path = Path(log_root_path) / log.log_path
+    log_path = Path(log_root_path) / log.combined_log_path
     # get list of frames  for this log
     frames = client.cognitionframe.list(log=log.id)
     # Create a dictionary mapping frame_number to id
@@ -70,15 +69,15 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
             frame_number = frame["FrameInfo"].frameNumber
         except Exception as e:
             logging.warning(
-                f"FrameInfo not found in current frame - will not parse any other frames from this log and continue with the next one"
+                f"FrameInfo not found in current frame at index {idx} - will not parse any other frames from this log and continue with the next one"
             )
             break
+        
         for repr_name in representation_list:
             try:
                 (pos, size) = frame._fields[repr_name]  
                 data = MessageToDict(frame[repr_name])
                 if repr_name in ["BallCandidates", "BallCandidatesTop"]:
-                    
                     for patch in data["patches"]:
                         del patch["data"]
                         del patch["type"]
@@ -120,6 +119,7 @@ def input_representation_data(log_root_path, client, log, my_parser, representat
             except Exception as e:
                 logger.error(f"Error inputting data for {log.log_path}")
                 logger.error(f"Failed at {repr_name} index {i}: {e}")
+                print(chunk)
                 # Consider 'break' or 'continue' instead of 'quit()' 
                 # if you want to try the next representation
                 quit()
@@ -168,7 +168,7 @@ def main(log_root_path, client, log):
 
     new_representation_list = input_representation_done(client, log, representation_list)
     if len(new_representation_list) == 0:
-        logger.debug(
+        logger.info(
             "\tall required representations are already inserted"
         )
         return
@@ -192,5 +192,5 @@ if __name__ == "__main__":
         return log.id
 
     logs = client.logs.list()
-    for log in sorted(logs, key=sort_key_fn, reverse=True):
+    for log in sorted(logs, key=sort_key_fn, reverse=False):
         main("/mnt/repl", client, log)
