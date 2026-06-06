@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def input_representation_done(client, log, representation_list):
     # get the log status - showing how many entries per representation there should be
     try:
-        # we use list here because we only know the log_id here and not the if of the logstatus object
+        # we use list here because we only know the log_id here and not the id of the logstatus object
         response = client.log_status.list(log=log.id)
         if len(response) == 0:
             return False
@@ -168,7 +168,7 @@ def main(log_root_path, client, log):
 
     new_representation_list = input_representation_done(client, log, representation_list)
     if len(new_representation_list) == 0:
-        logger.debug(
+        logger.info(
             "\tall required representations are already inserted"
         )
         return
