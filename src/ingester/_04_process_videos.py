@@ -5,11 +5,11 @@ import logging
 import os
 
 
-def get_all_team_names(client) -> Dict[str, int]:
+def get_all_team_names(client,event) -> Dict[str, int]:
     """
     Get a list of team names from the db
     """
-    return {team.name: team.id for team in client.team.list()}
+    return {team.name: team.id for team in client.team.list(event=event.id)}
 
 
 def check_team_name(all_teams: Mapping[str, int], team_name: str) -> bool:
@@ -93,8 +93,8 @@ def input_videos(log_root_path, client):
 def input_other_video_data(log_root_path, client):
     logging.info("################# Input Other Video Data #################")
     events = client.events.list()
-    all_teams = get_all_team_names(client)
     for event in events:
+        all_teams = get_all_team_names(client,event)
         video_folder = Path(log_root_path) / event.event_folder / "videos"
         
         if not video_folder.exists():
