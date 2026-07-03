@@ -9,11 +9,11 @@ import os
 logger = logging.getLogger(__name__)
 
 
-def get_all_team_names(client) -> Dict[str, int]:
+def get_all_team_names(client,event) -> Dict[str, int]:
     """
     Get a list of team names from the db
     """
-    return {team.name: team.id for team in client.team.list()}
+    return {team.name: team.id for team in client.team.list(event=event.id)}
 
 
 def check_team_name(all_teams: Mapping[str, int], team_name: str) -> bool:
@@ -43,8 +43,8 @@ def sort_key_fn(event):
 def input_games(log_root_path, client):
     logging.info("################# Input Game Data #################")
     events = client.events.list()
-    all_teams = get_all_team_names(client)
     for event in sorted(events, key=sort_key_fn):
+        all_teams = get_all_team_names(client,event)
         ev = Path(log_root_path) / event.event_folder
         if "lab-tests" in str(event.event_folder):
             logging.debug(f"\tignoring {event.event_folder} folder for game insertion")
@@ -119,8 +119,8 @@ def input_games(log_root_path, client):
 def input_other_games(log_root_path, client):
     logging.info("################# Input Other Game Data #################")
     events = client.events.list()
-    all_teams = get_all_team_names(client)
     for event in sorted(events, key=sort_key_fn):
+        all_teams = get_all_team_names(client,event)
         ev = Path(log_root_path) / event.event_folder
         if "lab-tests" in str(event.event_folder):
             logging.debug(f"\tignoring {event.event_folder} folder for game insertion")
