@@ -1,10 +1,13 @@
-from pathlib import Path
 from naoth.log import Reader as LogReader
+from vaapi.client import Vaapi
 from naoth.log import Parser
+from pathlib import Path
+import logging
+
 import argparse
 import os
 from tqdm import tqdm
-from vaapi.client import Vaapi
+
 import traceback
 
 
@@ -69,7 +72,7 @@ def parse_sparse_option(log_id, frame, time, parent, node):
 
     json_obj = {
         "frame": get_frame_id(frame),
-        "options_id": global_options_id,
+        "option": global_options_id,
         "active_state": global_state_id,
         # "parent":parent, # FIXME we could make it a reference to options if we would have the root option in the db
         # "frame":frame,
@@ -133,133 +136,134 @@ def is_behavior_done(log):
         return False
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--reverse", action="store_true", default=False)
-    args = parser.parse_args()
+def main(log_root_path, client, log):
+    log_path = Path(log_root_path) / log.log_path
 
-    log_root_path = os.environ.get("VAT_LOG_ROOT")
-    client = Vaapi(
-        base_url=os.environ.get("VAT_API_URL"),
-        api_key=os.environ.get("VAT_API_TOKEN"),
-    )
-    existing_data = client.logs.list()
+    print(f"{log.id}: {log_path}")
 
-    def sort_key_fn(log):
-        return log.id
+    # precalculate frame mapping for this log
+    frame_list = client.cognitionframe.list(log=log.id)
+    # Create a dictionary mapping frame_number to id
+    frame_to_id = {frame.frame_number: frame.id for frame in frame_list}
 
-    for log in sorted(existing_data, key=sort_key_fn, reverse=args.reverse):
-        log_id = log.id
-        log_path = Path(log_root_path) / log.log_path
+    # check if we need to insert this log
+    if is_behavior_done(log):
+        print("\tbehavior already inserted, will continue with the next log")
+        return
 
-        print(f"{log.id}: {log_path}")
+    my_parser = Parser()
+    game_log = LogReader(str(log_path), my_parser)
+    parse_sparse_option_list = list()
+    option_map = dict()
 
-        # precalculate frame mapping for this log
-        frame_list = client.cognitionframe.list(log=log.id)
-        # Create a dictionary mapping frame_number to id
-        frame_to_id = {frame.frame_number: frame.id for frame in frame_list}
+    broken_behavior = False
+    for idx, frame in enumerate(tqdm(game_log, desc="Parsing frame", leave=True)):
+        if "FrameInfo" in frame:
+            fi = frame["FrameInfo"]
+        else:
+            print(
+                f"frame {idx} does not have frame info representation so we dont go further"
+            )
+            print(
+                "it could be that there is one more behavior frame in the next frame but this is one is not finished."
+            )
+            break
 
-        # check if we need to insert this log
-        if is_behavior_done(log):
-            print("\tbehavior already inserted, will continue with the next log")
-            continue
-
-        my_parser = Parser()
-        game_log = LogReader(str(log_path), my_parser)
-        parse_sparse_option_list = list()
-        option_map = dict()
-
-        broken_behavior = False
-        for idx, frame in enumerate(tqdm(game_log, desc="Parsing frame", leave=True)):
-            if "FrameInfo" in frame:
-                fi = frame["FrameInfo"]
-            else:
-                print(
-                    f"frame {idx} does not have frame info representation so we dont go further"
-                )
-                print(
-                    "it could be that there is one more behavior frame in the next frame but this is one is not finished."
-                )
+        if "BehaviorStateComplete" in frame:
+            try:
+                full_behavior = frame["BehaviorStateComplete"]
+            except Exception as e:
+                print(e)
+                traceback.print_exc()
+                print("can't parse the Behavior will continue with the next log")
+                broken_behavior = True
                 break
 
-            if "BehaviorStateComplete" in frame:
+            for i, option in enumerate(full_behavior.options):
                 try:
-                    full_behavior = frame["BehaviorStateComplete"]
+                    option_response = client.behavior_option.create(
+                        log=log.id,
+                        xabsl_internal_option_id=i,
+                        option_name=option.name,
+                    )
                 except Exception as e:
+                    print(
+                        f"error inputing option from BehaviorStateComplete {log_path}"
+                    )
                     print(e)
-                    traceback.print_exc()
-                    print("can't parse the Behavior will continue with the next log")
-                    broken_behavior = True
-                    break
+                    quit()
 
-                for i, option in enumerate(full_behavior.options):
-                    try:
-                        option_response = client.behavior_option.create(
-                            log=log_id,
-                            xabsl_internal_option_id=i,
-                            option_name=option.name,
-                        )
-                    except Exception as e:
-                        print(
-                            f"error inputing option from BehaviorStateComplete {log_path}"
-                        )
-                        print(e)
-                        quit()
+                state_list = list()
+                for j, state in enumerate(option.states):
+                    state_dict = {
+                        "log": log.id,
+                        "option_id": option_response.id,
+                        "xabsl_internal_state_id": j,
+                        "name": state.name,
+                        "target": state.target,
+                    }
+                    state_list.append(state_dict)
 
-                    state_list = list()
-                    for j, state in enumerate(option.states):
-                        state_dict = {
-                            "log": log_id,
-                            "option_id": option_response.id,
-                            "xabsl_internal_state_id": j,
-                            "name": state.name,
-                            "target": state.target,
-                        }
-                        state_list.append(state_dict)
-
-                    try:
-                        response = client.behavior_option_state.bulk_create(
-                            repr_list=state_list
-                        )
-                    except Exception as e:
-                        print(f"error inputing the data {log_path}")
-                        print(e)
-                        quit()
-                fill_option_map(log_id)
-
-            if "BehaviorStateSparse" in frame:
-                # TODO build a check that makes sure behaviorcomplete was parsed already
-                sparse_behavior = frame["BehaviorStateSparse"]
-
-                for root in sparse_behavior.activeRootActions:
-                    if root.type != 0:  # Option
-                        print("Root node must be an option!")
-                    else:
-                        parse_sparse_option(
-                            log_id=log_id,
-                            frame=fi.frameNumber,
-                            time=fi.time,
-                            parent=-1,
-                            node=root,
-                        )
-            if idx % 200 == 0:
                 try:
-                    response = client.behavior_frame_option.bulk_create(
-                        data_list=parse_sparse_option_list
+                    response = client.behavior_option_state.bulk_create(
+                        repr_list=state_list
                     )
                 except Exception as e:
                     print(f"error inputing the data {log_path}")
                     print(e)
                     quit()
-                parse_sparse_option_list.clear()
+            fill_option_map(log.id)
 
-        # if we abort in BehaviorStateComplete we should not do this here
-        if not broken_behavior:
+        if "BehaviorStateSparse" in frame:
+            # TODO build a check that makes sure behaviorcomplete was parsed already
+            sparse_behavior = frame["BehaviorStateSparse"]
+
+            for root in sparse_behavior.activeRootActions:
+                if root.type != 0:  # Option
+                    print("Root node must be an option!")
+                else:
+                    parse_sparse_option(
+                        log_id=log.id,
+                        frame=fi.frameNumber,
+                        time=fi.time,
+                        parent=-1,
+                        node=root,
+                    )
+        if idx % 200 == 0:
             try:
                 response = client.behavior_frame_option.bulk_create(
                     data_list=parse_sparse_option_list
                 )
-                # print(f"\t{response}")
             except Exception as e:
                 print(f"error inputing the data {log_path}")
                 print(e)
+                quit()
+            parse_sparse_option_list.clear()
+
+    # if we abort in BehaviorStateComplete we should not do this here
+    if not broken_behavior:
+        try:
+            response = client.behavior_frame_option.bulk_create(
+                data_list=parse_sparse_option_list
+            )
+            # print(f"\t{response}")
+        except Exception as e:
+            print(f"error inputing the data {log_path}")
+            print(e)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("httpx").setLevel(logging.ERROR)
+
+    client = Vaapi(
+        base_url=os.environ.get("VAT_API_URL"),
+        api_key=os.environ.get("VAT_API_TOKEN"),
+    )
+    def sort_key_fn(log):
+        return log.id
+
+    logs = client.logs.list()
+    for log in sorted(logs, key=sort_key_fn, reverse=True):
+        main("/mnt/repl", client, log)
+        
